@@ -3,7 +3,7 @@ function sum(a,b){
 }
 module.exports=sum
 
-function create_xml(input) {
-    return "test";
+function create_xml(inputs) {
+    // todo implement
 }
 
