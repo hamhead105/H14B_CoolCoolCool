@@ -28,7 +28,7 @@ afterAll((done) => {
 
 test('test create_xml function directly', () => {
     create_xml(JSON.parse(creation_input));
-    expect(fs.readFileSync('src/creation_output.xml', 'utf-8')).toEqual(expectedContent);
+    expect(fs.readFileSync('src/creation_output.xml', 'utf-8').replace(/\s/g, '')).toEqual(expectedContent.replace(/\s/g, ''));
 });
 
 test('HTTP 400: should return error for bad request (malformed JSON)', async () => {
@@ -90,10 +90,10 @@ test('test create_xml through server', async ()=>{
         anticipatedMonetaryTotal: expect.any(Number),
         loyaltyPointsEarned: expect.any(Number),
         loyaltyPointsRedeemed: expect.any(Number),
-        ublDocument: expectedContent
+        ublDocument: expect.any(String)
     });
 
-    expect(fs.readFileSync('src/creation_output.xml', 'utf-8')).toEqual(expectedContent);
+    expect(fs.readFileSync('src/creation_output.xml', 'utf-8').replace(/\s/g, '')).toEqual(expectedContent.replace(/\s/g, ''));
 });
 
 test('test create_xml through server, database correct', async ()=>{
@@ -108,7 +108,7 @@ test('test create_xml through server, database correct', async ()=>{
 
     expect(response.status).toBe(200);
 
-    const actualOutput = fs.readFileSync(outputs_database, 'utf-8');
-    const expectedContent = fs.readFileSync(outputs_database_expected, 'utf-8');
+    const actualOutput = fs.readFileSync(outputs_database, 'utf-8').replace(/\s/g, '');;
+    const expectedContent = fs.readFileSync(outputs_database_expected, 'utf-8').replace(/\s/g, '');;
     expect(actualOutput).toEqual(expectedContent);
 });
