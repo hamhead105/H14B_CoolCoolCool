@@ -1,8 +1,10 @@
-const express = require('express');
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerJSDoc = require('swagger-jsdoc');
 const fs = require('fs');
-const { PrismaClient } = require('@prisma/client');
+
 const dotenv = require ('dotenv/config');
 const prisma = new PrismaClient();
 
@@ -73,7 +75,7 @@ app.post('/orders', async (req, res) => {
         });
     }
     create_xml(req.body);
-    
+
     try {
         create_xml(req.body);
         const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
