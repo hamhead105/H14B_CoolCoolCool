@@ -38,8 +38,8 @@ afterAll(async () => {
 });
 
 test('test create_xml function directly', () => {
-    create_xml(JSON.parse(creation_input1));
-    expect(fs.readFileSync('src/creation_output.xml', 'utf-8').replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
+    xml = create_xml(JSON.parse(creation_input1));
+    expect(xml.replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
 });
 
 test('HTTP 400: should return error for bad request (malformed JSON)', async () => {
@@ -79,7 +79,6 @@ test('HTTP 422: should return error for missing required fields', async () => {
 });
 
 test('test create_xml through server', async ()=>{
-    
     const response = await fetch(`${url}/orders`, {
         method: 'POST',
         headers: { 
@@ -98,12 +97,12 @@ test('test create_xml through server', async ()=>{
         taxAmount: 63,
         payableAmount: 692.97,
         anticipatedMonetaryTotal: 629.97,
-        loyaltyPointsEarned: expect.any(Number),
+        loyaltyPointsEarned: 55,
         loyaltyPointsRedeemed: 0,
         ublDocument: expect.any(String)
     });
 
-    expect(fs.readFileSync('src/creation_output.xml', 'utf-8').replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
+    expect(data.ublDocument.replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
 
     const found = await prisma.order.findUnique({
         where: { orderId: 'ORD-2025-001' }
@@ -116,7 +115,7 @@ test('test create_xml through server', async ()=>{
         taxAmount: 63,
         payableAmount: 692.97,
         anticipatedMonetaryTotal: 629.97,
-        loyaltyPointsEarned: expect.any(Number),
+        loyaltyPointsEarned: 55,
         loyaltyPointsRedeemed: 0,
         createdAt: expect.any(Date)
     });

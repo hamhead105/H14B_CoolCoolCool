@@ -140,7 +140,7 @@ ${itemsXml}
 
 </Order>`;
 
-  fs.writeFileSync('src/creation_output.xml', content, 'utf8');
+  return content;
 }
 
 function getLineExtension(inputs) {

@@ -4,6 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import fs from 'fs';
 import 'dotenv/config'; // This automatically loads your .env variables
+
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -74,10 +75,9 @@ app.post('/orders', async (req, res) => {
             error: "Missing required fields: order.id, buyer.companyId, and items array are mandatory." 
         });
     }
-    create_xml(req.body);
 
     try {
-        create_xml(req.body);
+        xml_output = create_xml(req.body);
         const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
         const payableAmount = Number(getPayableAmount(req.body).toFixed(2));
         const lineExtensionAmount = getLineExtension(req.body);
@@ -105,7 +105,7 @@ app.post('/orders', async (req, res) => {
             anticipatedMonetaryTotal: lineExtensionAmount,
             loyaltyPointsEarned: Math.round(payableAmount * loyalty_point_coeff),
             loyaltyPointsRedeemed: 0,
-            ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
+            ublDocument: xml_output
         });
     } catch (err) {
         if (err.code === 'P2002') {
