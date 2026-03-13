@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: postgresql://postgres.uwpheemusspfiawbyerm:hb14_coolcoolcoo!@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+      DATABASE_URL: ${{ DATABASE-URL }}
 
     steps:
       - name: Checkout code
