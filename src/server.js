@@ -111,11 +111,14 @@ app.post('/orders', async (req, res) => {
             loyaltyPointsRedeemed: 0,
             ublDocument: xml_output
         });
-    } catch (err) {
-        if (err.code === 'P2002') {
-            return res.status(409).json({ error: "Order ID already exists" });
-        }
-        res.status(500).json({ error: "Internal Server Error" });
+    } catch (error) {
+        console.error(error);
+        // This will send the ACTUAL error message back to your curl command
+        res.status(500).json({ 
+            message: "Vercel Error", 
+            detail: error.message,
+            stack: error.stack 
+        }); 
     }
 });
 
