@@ -2,11 +2,14 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJSDoc = require('swagger-jsdoc');
 const fs = require('fs');
+const { PrismaClient } = require('@prisma/client');
+const dotenv = require ('dotenv/config');
+const prisma = new PrismaClient();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const { create_xml } = require('./input.js');
+const { create_xml, getLineExtension, getTaxAmount, getPayableAmount } = require('./input.js');
 const database_path = 'src/outputs_database';
 const creation_output_path = 'src/creation_output.xml';
 
@@ -47,7 +50,7 @@ app.get('/health', (req, res) => {
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post('/orders', (req, res) => {
+app.post('/orders', async (req, res) => {
     const { 
         order, 
         buyer, 
@@ -82,7 +85,24 @@ app.post('/orders', (req, res) => {
         ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
     });
     
+    const taxAmount = getTaxAmount(req.body);
+    const payableAmount = getPayableAmount(req.body);
+    const lineExtensionAmount = getLineExtension(req.body);
+    
     fs.appendFileSync(database_path, `order ${order.id}: {\n${fs.readFileSync(creation_output_path, 'utf-8')}\n}`);
+    
+    await prisma.order.create({
+        data: {
+        status: "order placced",
+        inputData: req.body,
+        totalCost: taxAmount + payableAmount,
+        taxAmount: taxAmount,
+        payableAmount: payableAmount,
+        anticipatedMonetaryTotal: lineExtensionAmount,
+        loyaltyPointsEarned: 1,
+        loyaltyPointsRedeemed: 0,
+        }
+    });
 });
 
 // --- ERROR HANDLING ---
