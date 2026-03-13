@@ -38,8 +38,8 @@ afterAll(async () => {
 });
 
 test('test create_xml function directly', () => {
-    xml = create_xml(JSON.parse(creation_input1));
-    expect(xml.replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
+    let xml_output = create_xml(JSON.parse(creation_input1));
+    expect(xml_output.replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
 });
 
 test('HTTP 400: should return error for bad request (malformed JSON)', async () => {

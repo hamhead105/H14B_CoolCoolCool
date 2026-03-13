@@ -81,7 +81,7 @@ app.post('/orders', async (req, res) => {
     }
 
     try {
-        xml_output = create_xml(req.body);
+        let xml_output = create_xml(req.body);
         const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
         const payableAmount = Number(getPayableAmount(req.body).toFixed(2));
         const lineExtensionAmount = getLineExtension(req.body);
