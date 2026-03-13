@@ -10,7 +10,6 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const { create_xml, getLineExtension, getTaxAmount, getPayableAmount } = require('./input.js');
-const database_path = 'src/outputs_database';
 const creation_output_path = 'src/creation_output.xml';
 
 const loyalty_point_coeff = 0.08;
@@ -74,10 +73,6 @@ app.post('/orders', async (req, res) => {
         });
     }
     create_xml(req.body);
-    
-    const taxAmount = getTaxAmount(req.body);
-    const payableAmount = getPayableAmount(req.body);
-    const lineExtensionAmount = getLineExtension(req.body);
     
     try {
         create_xml(req.body);

@@ -1,14 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
-const dotenv = require ('dotenv/config');
 const prisma = new PrismaClient();
 
 const fs = require('fs');
 const app = require('../server.js');
 const { create_xml } = require('../input.js');
 
-const outputs_database = 'src/outputs_database';
-const outputs_database_expected = 'src/tests/expected_outputs/outputs_database_expected1';
-const outputs_database_expected2 = 'src/tests/expected_outputs/outputs_database_expected2';
 const creation_input1 = fs.readFileSync('src/tests/test_inputs/creation_input_1.json', 'utf-8');
 const creation_input2 = fs.readFileSync('src/tests/test_inputs/creation_input_2.json', 'utf-8');
 const creation_input_missing = fs.readFileSync('src/tests/test_inputs/creation_input_missing.json', 'utf-8');
@@ -128,7 +124,6 @@ test('test create_xml through server', async ()=>{
 
 
 test('test multiple creations through server, database correct', async ()=>{
-    fs.writeFileSync(outputs_database, '');
     const response = await fetch(`${url}/orders`, {
         method: 'POST',
         headers: { 
