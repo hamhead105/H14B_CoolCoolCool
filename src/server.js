@@ -13,6 +13,8 @@ const { create_xml, getLineExtension, getTaxAmount, getPayableAmount } = require
 const database_path = 'src/outputs_database';
 const creation_output_path = 'src/creation_output.xml';
 
+const loyalty_point_coeff = 0.08;
+
 // --- SWAGGER CONFIG ---
 const swaggerDefinition = {
   openapi: '3.0.0',
@@ -72,37 +74,48 @@ app.post('/orders', async (req, res) => {
         });
     }
     create_xml(req.body);
-
-    res.status(200).json({
-        orderId: -1, 
-        status: -1, 
-        totalCost: -1, 
-        taxAmount: -1, 
-        payableAmount: -1, 
-        anticipatedMonetaryTotal: -1, 
-        loyaltyPointsEarned: -1, 
-        loyaltyPointsRedeemed: -1, 
-        ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
-    });
     
     const taxAmount = getTaxAmount(req.body);
     const payableAmount = getPayableAmount(req.body);
     const lineExtensionAmount = getLineExtension(req.body);
     
-    fs.appendFileSync(database_path, `order ${order.id}: {\n${fs.readFileSync(creation_output_path, 'utf-8')}\n}`);
-    
-    await prisma.order.create({
-        data: {
-        status: "order placced",
-        inputData: req.body,
-        totalCost: taxAmount + payableAmount,
-        taxAmount: taxAmount,
-        payableAmount: payableAmount,
-        anticipatedMonetaryTotal: lineExtensionAmount,
-        loyaltyPointsEarned: 1,
-        loyaltyPointsRedeemed: 0,
+    try {
+        create_xml(req.body);
+        const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
+        const payableAmount = Number(getPayableAmount(req.body).toFixed(2));
+        const lineExtensionAmount = getLineExtension(req.body);
+
+        await prisma.order.create({
+            data: {
+                orderId: order.id,
+                status: "order placed",
+                inputData: req.body,
+                totalCost: (taxAmount + payableAmount),
+                taxAmount: taxAmount,
+                payableAmount: payableAmount,
+                anticipatedMonetaryTotal: lineExtensionAmount,
+                loyaltyPointsEarned: Math.round(payableAmount * loyalty_point_coeff),
+                loyaltyPointsRedeemed: 0,
+            }
+        });
+
+        res.status(200).json({
+            orderId: order.id,
+            status: "order placed",
+            totalCost: taxAmount + payableAmount,
+            taxAmount: taxAmount,
+            payableAmount: payableAmount,
+            anticipatedMonetaryTotal: lineExtensionAmount,
+            loyaltyPointsEarned: Math.round(payableAmount * loyalty_point_coeff),
+            loyaltyPointsRedeemed: 0,
+            ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
+        });
+    } catch (err) {
+        if (err.code === 'P2002') {
+            return res.status(409).json({ error: "Order ID already exists" });
         }
-    });
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 // --- ERROR HANDLING ---

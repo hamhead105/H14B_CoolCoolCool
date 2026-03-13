@@ -149,11 +149,11 @@ function getLineExtension(inputs) {
 
 function getTaxAmount(inputs) {
   const lineExtensionAmount = getLineExtension(inputs);
-  return lineExtensionAmount * (inputs.tax.taxPercent / 100);
+  return (lineExtensionAmount * (inputs.tax.taxPercent / 100));
 }
 
 function getPayableAmount(inputs) {
-  return getLineExtension(inputs) + getTaxAmount(inputs);
+  return (getLineExtension(inputs) + getTaxAmount(inputs));
 }
 
 module.exports = { create_xml, getLineExtension, getTaxAmount, getPayableAmount };
