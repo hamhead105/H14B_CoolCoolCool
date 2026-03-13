@@ -1,17 +1,22 @@
-const express = require('express');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJSDoc = require('swagger-jsdoc');
-const fs = require('fs');
-const { PrismaClient } = require('@prisma/client');
-const dotenv = require ('dotenv/config');
-const prisma = new PrismaClient();
+import express from 'express';
+
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
+import fs from 'fs';
+import 'dotenv/config'; // This automatically loads your .env variables
+
+import { PrismaClient } from '@prisma/client';
+
+let prisma;
+if (!global.prisma) {
+  global.prisma = new PrismaClient();
+}
+prisma = global.prisma;
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const { create_xml, getLineExtension, getTaxAmount, getPayableAmount } = require('./input.js');
-const creation_output_path = 'src/creation_output.xml';
-
+import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from './input.js';
 const loyalty_point_coeff = 0.08;
 
 // --- SWAGGER CONFIG ---
@@ -43,12 +48,12 @@ app.use(express.json());
  *                   type: string
  *                   example: ok
  */
-app.get('/health', (req, res) => {
-  res.json({ status: string, uptime: int, timestamp: datetime });
-});
+
 
 // --- ROUTES ---
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime(), timestamp:  new Date().toISOString()});
+});
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.post('/orders', async (req, res) => {
@@ -72,10 +77,9 @@ app.post('/orders', async (req, res) => {
             error: "Missing required fields: order.id, buyer.companyId, and items array are mandatory." 
         });
     }
-    create_xml(req.body);
-    
+
     try {
-        create_xml(req.body);
+        let xml_output = create_xml(req.body);
         const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
         const payableAmount = Number(getPayableAmount(req.body).toFixed(2));
         const lineExtensionAmount = getLineExtension(req.body);
@@ -103,13 +107,15 @@ app.post('/orders', async (req, res) => {
             anticipatedMonetaryTotal: lineExtensionAmount,
             loyaltyPointsEarned: Math.round(payableAmount * loyalty_point_coeff),
             loyaltyPointsRedeemed: 0,
-            ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
+            ublDocument: xml_output
         });
-    } catch (err) {
-        if (err.code === 'P2002') {
-            return res.status(409).json({ error: "Order ID already exists" });
-        }
-        res.status(500).json({ error: "Internal Server Error" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            message: "Vercel Error", 
+            detail: error.message,
+            stack: error.stack 
+        }); 
     }
 });
 
@@ -128,4 +134,4 @@ app.use((err, req, res, next) => {
 //     });
 // }
 
-module.exports = app;
+export default app;
