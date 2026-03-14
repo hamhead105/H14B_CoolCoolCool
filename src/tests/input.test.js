@@ -17,8 +17,9 @@ const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
 import fs from 'fs';
-import app from '../server.js';
-import { create_xml } from '../input.js';
+
+const { default: app } = await import('../server.js');
+const { create_xml } = await import('../input.js');
 
 const creation_input1 = fs.readFileSync('src/tests/test_inputs/creation_input_1.json', 'utf-8');
 const creation_input2 = fs.readFileSync('src/tests/test_inputs/creation_input_2.json', 'utf-8');
