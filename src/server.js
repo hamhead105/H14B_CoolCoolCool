@@ -40,7 +40,51 @@ app.use(express.json());
  *                   example: ok
  */
 app.get('/health', (req, res) => {
-  res.json({ status: string, uptime: int, timestamp: datetime });
+  res.json({ 
+    status: 'ok', 
+    uptime: process.uptime(), 
+    timestamp: new Date().toISOString() 
+  });
+});
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.post('/orders', (req, res) => {
+    const { 
+        order, 
+        buyer, 
+        seller, 
+        delivery, 
+        tax, 
+        items, 
+        loyaltyPointsRedeemed 
+    } = req.body;
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || authHeader === 'Invalid token') {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!order?.id || !buyer?.companyId || !items || !Array.isArray(items)) {
+        return res.status(422).json({ 
+            error: "Missing required fields: order.id, buyer.companyId, and items array are mandatory." 
+        });
+    }
+    create_xml(req.body);
+
+    res.status(200).json({
+        orderId: -1, 
+        status: -1, 
+        totalCost: -1, 
+        taxAmount: -1, 
+        payableAmount: -1, 
+        anticipatedMonetaryTotal: -1, 
+        loyaltyPointsEarned: -1, 
+        loyaltyPointsRedeemed: -1, 
+        ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
+    });
+    
+    fs.appendFileSync(database_path, `order ${order.id}: {\n${fs.readFileSync(creation_output_path, 'utf-8')}\n}`);
 });
 
 /**
@@ -85,46 +129,6 @@ app.delete('/order/:id', (req, res) => {
     id: id,
     deleteAt: new Date().toISOString()
   });
-});
-
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-app.post('/orders', (req, res) => {
-    const { 
-        order, 
-        buyer, 
-        seller, 
-        delivery, 
-        tax, 
-        items, 
-        loyaltyPointsRedeemed 
-    } = req.body;
-
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || authHeader === 'Invalid token') {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    if (!order?.id || !buyer?.companyId || !items || !Array.isArray(items)) {
-        return res.status(422).json({ 
-            error: "Missing required fields: order.id, buyer.companyId, and items array are mandatory." 
-        });
-    }
-    create_xml(req.body);
-
-    res.status(200).json({
-        orderId: -1, 
-        status: -1, 
-        totalCost: -1, 
-        taxAmount: -1, 
-        payableAmount: -1, 
-        anticipatedMonetaryTotal: -1, 
-        loyaltyPointsEarned: -1, 
-        loyaltyPointsRedeemed: -1, 
-        ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
-    });
-    
-    fs.appendFileSync(database_path, `order ${order.id}: {\n${fs.readFileSync(creation_output_path, 'utf-8')}\n}`);
 });
 
 // --- ERROR HANDLING ---
