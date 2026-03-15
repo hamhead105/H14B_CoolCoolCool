@@ -146,7 +146,13 @@ export async function putOrder(req, res) {
       anticipatedMonetaryTotal: lineExtensionAmount,
       ublDocument: xml_output
     });
-    
+  }
+  catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
 export async function listOrders(req, res) {
   const { buyerId, status } = req.query;
 
@@ -167,5 +173,3 @@ export async function listOrders(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
-
-

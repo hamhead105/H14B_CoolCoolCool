@@ -357,3 +357,5 @@ router.put('/:id', (req, res, next) => {
 }, (req, res) => {
   putOrder(req, res);
 });
+
+export default router;
