@@ -1,14 +1,23 @@
-const express = require('express');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJSDoc = require('swagger-jsdoc');
-const fs = require('fs');
+import express from 'express';
+
+import swaggerUi from 'swagger-ui-express';
+import swaggerJSDoc from 'swagger-jsdoc';
+import fs from 'fs';
+import 'dotenv/config'; // This automatically loads your .env variables
+
+import { PrismaClient } from '@prisma/client';
+
+let prisma;
+if (!global.prisma) {
+  global.prisma = new PrismaClient();
+}
+prisma = global.prisma;
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const { create_xml } = require('./input.js');
-const database_path = 'src/outputs_database';
-const creation_output_path = 'src/creation_output.xml';
+import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from './input.js';
+const loyalty_point_coeff = 0.08;
 
 // --- SWAGGER CONFIG ---
 const swaggerDefinition = {
@@ -49,7 +58,8 @@ app.get('/health', (req, res) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.post('/orders', (req, res) => {
+// POST route
+app.post('/orders', async (req, res) => {
     const { 
         order, 
         buyer, 
@@ -70,21 +80,89 @@ app.post('/orders', (req, res) => {
             error: "Missing required fields: order.id, buyer.companyId, and items array are mandatory." 
         });
     }
-    create_xml(req.body);
 
-    res.status(200).json({
-        orderId: -1, 
-        status: -1, 
-        totalCost: -1, 
-        taxAmount: -1, 
-        payableAmount: -1, 
-        anticipatedMonetaryTotal: -1, 
-        loyaltyPointsEarned: -1, 
-        loyaltyPointsRedeemed: -1, 
-        ublDocument: fs.readFileSync(creation_output_path, 'utf-8')
-    });
-    
-    fs.appendFileSync(database_path, `order ${order.id}: {\n${fs.readFileSync(creation_output_path, 'utf-8')}\n}`);
+    try {
+        let xml_output = create_xml(req.body);
+        const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
+        const payableAmount = Number(getPayableAmount(req.body).toFixed(2));
+        const lineExtensionAmount = getLineExtension(req.body);
+
+        await prisma.order.create({
+            data: {
+                orderId: order.id,
+                status: "order placed",
+                inputData: req.body,
+                totalCost: (taxAmount + payableAmount),
+                taxAmount: taxAmount,
+                payableAmount: payableAmount,
+                anticipatedMonetaryTotal: lineExtensionAmount,
+                loyaltyPointsEarned: Math.round(payableAmount * loyalty_point_coeff),
+                loyaltyPointsRedeemed: 0,
+            }
+        });
+
+        res.status(200).json({
+            orderId: order.id,
+            status: "order placed",
+            totalCost: taxAmount + payableAmount,
+            taxAmount: taxAmount,
+            payableAmount: payableAmount,
+            anticipatedMonetaryTotal: lineExtensionAmount,
+            loyaltyPointsEarned: Math.round(payableAmount * loyalty_point_coeff),
+            loyaltyPointsRedeemed: 0,
+            ublDocument: xml_output
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            message: "Vercel Error", 
+            detail: error.message,
+            stack: error.stack 
+        }); 
+    }
+});
+
+// GET route
+app.get('/orders/:id', async (req, res) => {
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || authHeader === 'Invalid token') {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const orderId = req.params.id;
+
+    try {
+
+        const found = await prisma.order.findUnique({
+            where: { orderId: orderId }
+        });
+
+        if (!found) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const xml_output = create_xml(found.inputData);
+
+        res.status(200).json({
+            orderId: found.orderId,
+            status: found.status,
+            totalCost: found.totalCost,
+            taxAmount: found.taxAmount,
+            payableAmount: found.payableAmount,
+            anticipatedMonetaryTotal: found.anticipatedMonetaryTotal,
+            createdAt: found.createdAt,
+            ublDocument: xml_output
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Vercel Error",
+            detail: error.message,
+            stack: error.stack
+        });
+    }
 });
 
 /**
@@ -146,4 +224,4 @@ app.use((err, req, res, next) => {
 //     });
 // }
 
-module.exports = app;
+export default app;
