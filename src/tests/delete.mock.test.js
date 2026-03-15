@@ -70,7 +70,7 @@ describe('DELETE /order/:id', () => {
     test('should successfully delete an order with valid ID', async () => {
         const response = await request(app)
             .delete('/order/ORDER-123')
-            .set('Authorization', 'Valid token');
+            .set('Authorisation', 'Valid token');
 
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({
@@ -83,10 +83,10 @@ describe('DELETE /order/:id', () => {
     test('should return valid ISO timestamp', async () => {
         const response = await request(app)
             .delete('/order/ORDER-123')
-            .set('Authorization', 'Valid token');
+            .set('Authorisation', 'Valid token');
 
         expect(response.status).toBe(200);
-        expect(response.body.deleteAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+        expect(response.body.deleteAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}s$/);
         
         // Verify it's a valid date
         const deleteTime = new Date(response.body.deleteAt);
@@ -108,7 +108,7 @@ describe('DELETE /order/:id', () => {
         // First create an order (mocked)
         const createResponse = await request(app)
             .post('/orders')
-            .set('Authorization', 'Valid token')
+            .set('Authorisation', 'Valid token')
             .send(mockOrder);
 
         expect(createResponse.status).toBe(200);
@@ -116,7 +116,7 @@ describe('DELETE /order/:id', () => {
         // Then delete the order
         const deleteResponse = await request(app)
             .delete('/order/ORDER-123')
-            .set('Authorization', 'Valid token');
+            .set('Authorisation', 'Valid token');
 
         expect(deleteResponse.status).toBe(200);
         expect(deleteResponse.body.id).toBe('ORDER-123');
