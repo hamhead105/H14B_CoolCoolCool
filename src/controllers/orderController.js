@@ -1,5 +1,5 @@
 import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from '../services/xmlService.js';
-import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders } from '../services/orderService.js';
+import { createOrder, getOrderById, deleteOrderById } from '../services/orderService.js';
 
 const LOYALTY_COEFF = 0.08;
 
@@ -74,3 +74,31 @@ export async function getOrder(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+export async function deleteOrder(req, res) {
+    const orderId = req.params.id;
+
+  try {
+    const found = await getOrderById(orderId);
+
+    if (!found) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    await deleteOrderById(orderId);
+
+    return res.status(200).json({
+      message: 'Order deleted successfully',
+      id: orderId,
+      deletedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: 'Internal server error',
+      detail: error.message
+    });
+  }
+}
+  
+

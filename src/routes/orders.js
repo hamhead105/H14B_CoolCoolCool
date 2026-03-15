@@ -1,5 +1,5 @@
 import express from 'express';
-import { postOrder, getOrder, putOrder, deleteOrderHandler } from '../controllers/orderController.js';
+import { postOrder, getOrder, deleteOrder } from '../controllers/orderController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -158,5 +158,44 @@ router.get('/:id', (req, res, next) => {
   getOrder(req, res);
 });
 
+/**
+ * @swagger
+ * /orders/{id}:
+ *   delete:
+ *     summary: Delete an order
+ *     tags:
+ *       - Orders
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the order to delete
+ *     responses:
+ *       200:
+ *         description: Order deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Order deleted successfully
+ *                 id:
+ *                   type: string
+ *                 deletedAt:
+ *                   type: string
+ *       401:
+ *         description: Unauthorised
+ *       404:
+ *         description: Order not found
+ */
+router.delete('/:id', (req, res, next) => {
+  authMiddleware(req, res, next);
+}, (req, res) => {
+  deleteOrder(req, res);
+});
 
 export default router;
