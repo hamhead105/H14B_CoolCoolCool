@@ -14,4 +14,7 @@ export async function deleteOrderById(orderId) {
 
 export async function updateOrder(orderId, data) {
   return await prisma.order.update({ where: { orderId }, data });
+  
+export async function getAllOrders(filters) {
+  return await prisma.order.findMany({ where: filters });
 }

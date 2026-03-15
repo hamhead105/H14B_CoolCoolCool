@@ -1,5 +1,5 @@
 import express from 'express';
-import { postOrder, getOrder, putOrder, deleteOrder } from '../controllers/orderController.js';
+import { postOrder, getOrder, putOrder, deleteOrder, listOrders } from '../controllers/orderController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -200,6 +200,50 @@ router.delete('/:id', (req, res, next) => {
 
 /**
  * @swagger
+ * /orders:
+ *   get:
+ *     summary: List all orders with optional filters
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: buyerId
+ *         schema:
+ *           type: string
+ *         description: Filter by buyer ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filter by order status
+ *     responses:
+ *       200:
+ *         description: List of orders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   orderId: { type: string }
+ *                   status: { type: string }
+ *                   totalCost: { type: number }
+ *                   createdAt: { type: string }
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/', (req, res, next) => {
+  authMiddleware(req, res, next);
+}, (req, res) => {
+  listOrders(req, res);
+});
+
+/**
+ * @swagger
  * /orders/{id}:
  *   put:
  *     summary: Update order fields and regenerate UBL 2.1 XML
@@ -313,5 +357,3 @@ router.put('/:id', (req, res, next) => {
 }, (req, res) => {
   putOrder(req, res);
 });
-
-export default router;

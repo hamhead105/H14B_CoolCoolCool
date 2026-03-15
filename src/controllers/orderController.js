@@ -1,5 +1,5 @@
 import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from '../services/xmlService.js';
-import { createOrder, getOrderById, updateOrder, deleteOrderById } from '../services/orderService.js';
+import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders } from '../services/orderService.js';
 
 const LOYALTY_COEFF = 0.08;
 
@@ -146,6 +146,22 @@ export async function putOrder(req, res) {
       anticipatedMonetaryTotal: lineExtensionAmount,
       ublDocument: xml_output
     });
+    
+export async function listOrders(req, res) {
+  const { buyerId, status } = req.query;
+
+  const filters = {};
+  if (buyerId) filters.buyerId = buyerId;
+  if (status) filters.status = status;
+
+  try {
+    const orders = await getAllOrders(filters);
+    return res.status(200).json(orders.map(o => ({
+      orderId: o.orderId,
+      status: o.status,
+      totalCost: o.totalCost,
+      createdAt: o.createdAt
+    })));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
