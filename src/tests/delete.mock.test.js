@@ -1,31 +1,31 @@
-const request = require('supertest');
-const fs = require('fs');
+import { jest } from '@jest/globals';
+import request from 'supertest';
 
-// Mock swagger-jsdoc to prevent file reading issues during tests
-jest.mock('swagger-jsdoc', () => {
-    return jest.fn(() => ({
-        openapi: '3.0.0',
-        info: { title: 'Test API', version: '1.0.0' },
-        paths: {}
-    }));
-});
+// Mock Prisma
+const mPrisma = {
+    order: {
+        findUnique: jest.fn(),
+        delete: jest.fn(),
+        create: jest.fn(),
+        deleteMany: jest.fn(),
+    },
+    $disconnect: jest.fn()
+};
 
-// Mock swagger-ui-express
-jest.mock('swagger-ui-express', () => ({
-    serve: (req, res, next) => next(),
-    setup: () => (req, res) => res.json({ message: 'swagger ui' })
+await jest.unstable_mockModule('@prisma/client', () => ({
+    PrismaClient: jest.fn(() => mPrisma)
 }));
 
-// Mock the entire input module
-jest.mock('../input.js', () => ({
-    create_xml: jest.fn()
+// Mock input.js
+const mockCreateXml = jest.fn();
+await jest.unstable_mockModule('../input.js', () => ({
+    create_xml: mockCreateXml,
+    getLineExtension: jest.fn(),
+    getTaxAmount: jest.fn(() => 0),
+    getPayableAmount: jest.fn(() => 0),
 }));
 
-// Mock the file system operations
-jest.mock('fs');
-
-const app = require('../server.js');
-const { create_xml } = require('../input.js');
+const { default: app } = await import('../server.js');
 
 // Mock data
 const mockOrder = {
@@ -37,39 +37,30 @@ const mockOrder = {
     ]
 };
 
-const mockXmlOutput = `<?xml version="1.0" encoding="UTF-8"?>
-<Order>
-    <ID>ORDER-123</ID>
-    <BuyerCompanyID>BUYER-456</BuyerCompanyID>
-</Order>`;
+const mockDbOrder = {
+    orderId: "ORDER-123",
+    status: "order placed",
+    totalCost: 0,
+    taxAmount: 0,
+    payableAmount: 0,
+    anticipatedMonetaryTotal: 0,
+    inputData: mockOrder,
+    createdAt: new Date().toISOString()
+};
 
-describe('DELETE /order/:id', () => {
-    let mockFs;
-    let mockCreateXml;
+describe('DELETE /orders/:id', () => {
 
     beforeEach(() => {
-        // Reset all mocks before each test
         jest.clearAllMocks();
-        
-        // Setup fs mocks
-        mockFs = fs;
-        mockFs.readFileSync.mockReturnValue(mockXmlOutput);
-        mockFs.appendFileSync.mockReturnValue(undefined);
-        mockFs.existsSync.mockReturnValue(true);
-        mockFs.writeFileSync.mockReturnValue(undefined);
-
-        // Setup input.js mocks
-        mockCreateXml = create_xml;
-        mockCreateXml.mockReturnValue(undefined);
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
+        mockCreateXml.mockReturnValue('<xml/>');
     });
 
     test('should successfully delete an order with valid ID', async () => {
+        mPrisma.order.findUnique.mockResolvedValue(mockDbOrder);
+        mPrisma.order.delete.mockResolvedValue(mockDbOrder);
+
         const response = await request(app)
-            .delete('/order/ORDER-123')
+            .delete('/orders/ORDER-123')
             .set('Authorisation', 'Valid token');
 
         expect(response.status).toBe(200);
@@ -77,51 +68,92 @@ describe('DELETE /order/:id', () => {
             message: 'Order deleted successfully',
             id: 'ORDER-123'
         });
-        expect(response.body.deleteAt).toBeDefined();
+        expect(response.body.deletedAt).toBeDefined();
     });
 
-    test('should return valid ISO timestamp', async () => {
+    test('should return 401 for missing Authorisation header', async () => {
         const response = await request(app)
-            .delete('/order/ORDER-123')
+            .delete('/orders/ORDER-123');
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Unauthorised');
+    });
+
+    test('should return 401 for invalid token', async () => {
+        const response = await request(app)
+            .delete('/orders/ORDER-123')
+            .set('Authorisation', 'Invalid token');
+
+        expect(response.status).toBe(401);
+        expect(response.body.error).toBe('Unauthorised');
+    });
+
+    test('should return 404 when order does not exist', async () => {
+        mPrisma.order.findUnique.mockResolvedValue(null);
+
+        const response = await request(app)
+            .delete('/orders/NONEXISTENT')
+            .set('Authorisation', 'Valid token');
+
+        expect(response.status).toBe(404);
+        expect(response.body.error).toBe('Order not found');
+    });
+
+    test('should return valid ISO timestamp on success', async () => {
+        mPrisma.order.findUnique.mockResolvedValue(mockDbOrder);
+        mPrisma.order.delete.mockResolvedValue(mockDbOrder);
+
+        const response = await request(app)
+            .delete('/orders/ORDER-123')
             .set('Authorisation', 'Valid token');
 
         expect(response.status).toBe(200);
-        expect(response.body.deleteAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}s$/);
-        
-        // Verify it's a valid date
-        const deleteTime = new Date(response.body.deleteAt);
-        expect(deleteTime).toBeInstanceOf(Date);
+        expect(response.body.deletedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}s$/);
+        const deleteTime = new Date(response.body.deletedAt);
         expect(deleteTime.getTime()).not.toBeNaN();
+    });
+
+    test('should return 500 when database throws an error', async () => {
+        mPrisma.order.findUnique.mockRejectedValue(new Error('Database connection failed'));
+
+        const response = await request(app)
+            .delete('/orders/ORDER-123')
+            .set('Authorisation', 'Valid token');
+
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe('Internal server error');
+    });
+
+    test('should call prisma.order.findUnique and prisma.order.delete with correct ID', async () => {
+        mPrisma.order.findUnique.mockResolvedValue(mockDbOrder);
+        mPrisma.order.delete.mockResolvedValue(mockDbOrder);
+
+        await request(app)
+            .delete('/orders/ORDER-123')
+            .set('Authorisation', 'Valid token');
+
+        expect(mPrisma.order.findUnique).toHaveBeenCalledWith({ where: { orderId: 'ORDER-123' } });
+        expect(mPrisma.order.delete).toHaveBeenCalledWith({ where: { orderId: 'ORDER-123' } });
+    });
+
+    test('should NOT call prisma.order.delete when order is not found', async () => {
+        mPrisma.order.findUnique.mockResolvedValue(null);
+
+        await request(app)
+            .delete('/orders/NONEXISTENT')
+            .set('Authorisation', 'Valid token');
+
+        expect(mPrisma.order.delete).not.toHaveBeenCalled();
     });
 
     test('should handle malformed JSON in request body', async () => {
         const response = await request(app)
-            .delete('/order/ORDER-123')
+            .delete('/orders/ORDER-123')
+            .set('Authorisation', 'Valid token')
             .set('Content-Type', 'application/json')
             .send('{"invalid-json":}');
 
         expect(response.status).toBe(400);
         expect(response.body.error).toBe('Bad JSON');
-    });
-
-    test('should integrate with order creation and deletion flow', async () => {
-        // First create an order (mocked)
-        const createResponse = await request(app)
-            .post('/orders')
-            .set('Authorisation', 'Valid token')
-            .send(mockOrder);
-
-        expect(createResponse.status).toBe(200);
-
-        // Then delete the order
-        const deleteResponse = await request(app)
-            .delete('/order/ORDER-123')
-            .set('Authorisation', 'Valid token');
-
-        expect(deleteResponse.status).toBe(200);
-        expect(deleteResponse.body.id).toBe('ORDER-123');
-
-        // Verify create_xml was called during creation
-        expect(create_xml).toHaveBeenCalledWith(mockOrder);
     });
 });
