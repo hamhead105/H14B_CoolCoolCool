@@ -48,14 +48,12 @@ app.use(express.json());
  *                   type: string
  *                   example: ok
  */
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    uptime: process.uptime(), 
-    timestamp: new Date().toISOString() 
-  });
-});
 
+
+// --- ROUTES ---
+app.get('/health', (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // POST route
@@ -178,10 +176,10 @@ app.get('/orders/:id', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: The ID of the order to delete 
+ *         description: The ID of the order to delete
  *     responses:
  *       200:
- *         description: Order deleted succesfully
+ *         description: Order deleted successfully
  *         content:
  *           application/json:
  *             schema:
@@ -192,21 +190,47 @@ app.get('/orders/:id', async (req, res) => {
  *                   example: Order deleted successfully
  *                 id:
  *                   type: string
+ *                 deletedAt:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Order not found
- *       403:
- *         description: Not Authorised to delete
  */
-app.delete('/order/:id', (req, res) => {
-  const { id } = req.params; 
+app.delete('/orders/:id', async (req, res) => {
+    const { id } = req.params;
 
-  // deletion logic
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || authHeader === 'Invalid token') {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
-  res.json({
-    message: 'Order deleted successfully',
-    id: id,
-    deleteAt: new Date().toISOString()
-  });
+    try {
+        const found = await prisma.order.findUnique({
+            where: { orderId: id }
+        });
+
+        if (!found) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        await prisma.order.delete({
+            where: { orderId: id }
+        });
+
+        res.status(200).json({
+            message: 'Order deleted successfully',
+            id: id,
+            deletedAt: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'Internal server error',
+            detail: error.message
+        });
+    }
 });
 
 // --- ERROR HANDLING ---
