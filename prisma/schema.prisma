@@ -24,3 +24,36 @@ model Order {
   loyaltyPointsRedeemed    Int      @default(0)
   createdAt                DateTime @default(now())
 }
+
+model Product {
+  productId                String   @id
+  image                    String
+  cost                     Float
+  brand                    String
+  discountPercent          Float
+  productFamily            String
+  productTier              Int
+  nextProduct              String
+}
+
+model buyer {
+  buyerId              String  @id
+  encryptedPassword       String
+  firstName               String
+  lastName                String
+  address                 String
+  phoneNumber             String
+  email                   String
+  loyaltyPoints           Int
+}
+
+model seller {
+  sellerId              String  @id
+  encryptedPassword       String
+  company                 String
+  sellerName              String
+  address                 String
+  phoneNumber             String
+  email                   String
+  loyaltyPoints           Int
+}
