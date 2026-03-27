@@ -1,0 +1,14 @@
+{
+    "productId": "PROD-12345",
+    "sellerId": "12345", 
+    "name": "item1", 
+    "description": "does xyz", 
+    "cost": 24,
+    "brand": "brandname", 
+    "family": "series1", 
+    "releaseDate": "2025-04-05", 
+    "onSpecial": false, 
+    "discount": 0.2, 
+    "productTier": 1, 
+    "nextProduct": ""
+}

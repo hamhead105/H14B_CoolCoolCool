@@ -1,0 +1,119 @@
+import { jest } from '@jest/globals';
+import { Prisma } from '@prisma/client';
+import fs from 'fs';
+
+const mPrisma = {
+  product: {
+    deleteMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn()
+  },
+  $disconnect: jest.fn()
+};
+
+await jest.unstable_mockModule('@prisma/client', () => ({
+  PrismaClient: jest.fn(() => mPrisma)
+}));
+
+const { PrismaClient } = await import('@prisma/client');
+const prisma = new PrismaClient();
+
+const { default: app } = await import('../../src/server.js');
+
+const prod_input1 = fs.readFileSync('tests/inputs/prod_post_input1.json', 'utf-8');
+const prod_input_missing = fs.readFileSync('tests/inputs/prod_post_input_missing.json', 'utf-8');
+
+let server;
+let url;
+
+beforeAll((done) => {
+  server = app.listen(0, () => {
+    const port = server.address().port;
+    url = `http://localhost:${port}`;
+    done();
+  });
+});
+
+afterAll(async () => {
+  await new Promise((resolve) => server.close(resolve));
+  await prisma.$disconnect();
+});
+
+beforeEach(async () => {
+  jest.clearAllMocks();
+  await prisma.product.deleteMany({});
+});
+
+describe('POST /products', () => {
+
+  test('HTTP 400: malformed JSON', async () => {
+    const response = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: '{"invalid-json":}'
+    });
+
+    expect(response.status).toBe(400);
+  });
+
+  test('HTTP 401: invalid or missing token', async () => {
+    const response = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: { Authorization: 'Invalid token' },
+      body: prod_input1
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  test('HTTP 422: missing required fields', async () => {
+    const response = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: prod_input_missing
+    });
+
+    expect(response.status).toBe(422);
+  });
+
+  test('HTTP 200: creates product and returns right json', async () => {
+    prisma.product.create.mockResolvedValue({
+      productId: '-1',
+      sellerId: '12345',
+      name: "item1",
+      description: "does xyz",
+      cost: 24,
+      brand: "brand1",
+      family: "series1",
+      onSpecial: false,
+      discount: 0.2,
+      productTier: 1,
+      nextProduct: "",
+      releaseDate: "2025-04-05"
+    });
+
+    const response = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: prod_input1
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+
+    expect(data).toMatchObject({
+        productId: "PROD-12345",
+        name: "item1",
+        description: "does xyz"
+    });
+  });
+});
