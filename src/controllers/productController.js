@@ -1,0 +1,43 @@
+import { createProduct } from '../services/productService.js';
+
+export async function postProduct(req, res) {
+  const {productId, sellerId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
+
+  if (!productId || !sellerId || !name || cost === undefined || !description || !brand || !family || !releaseDate || onSpecial === undefined || discount === undefined) {
+    return res.status(422).json({
+      error: 'Missing required fields'
+    });
+  }
+  try {
+    try {
+      await createProduct({
+        productId: productId,
+        sellerId: sellerId,
+        name: name,
+        description: description,
+        cost: cost,
+        brand: brand,
+        family: family,
+        releaseDate: releaseDate,
+        onSpecial: onSpecial,
+        discount: discount,
+        productTier: productTier,
+        nextProduct: nextProduct
+      });
+    } catch (error) {
+        console.error(error);
+            return res.status(400).json({
+            error: "Duplicate order: A product with this ID already exists.",
+        });
+    }
+
+    // todo make productId
+    return res.status(200).json({
+        productId: productId,
+        name: name,
+        description: description
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}

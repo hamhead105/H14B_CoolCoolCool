@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import orderRoutes from './routes/orders.js';
+import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
 import docsRoutes from './routes/docs.js';
 
@@ -10,6 +11,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use('/orders', orderRoutes);
+app.use('/products', productRoutes);
 app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
 
