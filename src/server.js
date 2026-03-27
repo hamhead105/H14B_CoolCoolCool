@@ -4,6 +4,7 @@ import orderRoutes from './routes/orders.js';
 import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
 import docsRoutes from './routes/docs.js';
+import buyerRoutes from './routes/buyers.js'
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,6 +15,7 @@ app.use('/orders', orderRoutes);
 app.use('/products', productRoutes);
 app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
+app.use('/buyers', buyerRoutes);
 
 
 app.use((err, req, res, next) => {
