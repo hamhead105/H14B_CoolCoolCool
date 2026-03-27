@@ -21,6 +21,7 @@ const prisma = new PrismaClient();
 const { default: app } = await import('../../src/server.js');
 
 const prod_input1 = fs.readFileSync('tests/inputs/prod_post_input1.json', 'utf-8');
+const prod_input2 = fs.readFileSync('tests/inputs/prod_post_input2.json', 'utf-8');
 const prod_input_missing = fs.readFileSync('tests/inputs/prod_post_input_missing.json', 'utf-8');
 
 let server;
@@ -116,4 +117,101 @@ describe('POST /products', () => {
         description: "does xyz"
     });
   });
+
+  test('HTTP 400 duplicate products', async () => {
+    const prismaDuplicateError = new Prisma.PrismaClientKnownRequestError(
+      'Unique constraint failed',
+      { code: 'P2002', clientVersion: '5.0.0' }
+    );
+    
+    prisma.product.create.mockResolvedValueOnce({
+      productId: 'PROD-12345',
+      sellerId: '12345',
+      name: "item1",
+      description: "does xyz",
+      cost: 24,
+      brand: "brand1",
+      family: "series1",
+      onSpecial: false,
+      discount: 0.2,
+      productTier: 1,
+      nextProduct: "",
+      releaseDate: "2025-04-05"
+    })
+    .mockRejectedValueOnce(prismaDuplicateError);
+
+    const response1 = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: prod_input1
+    });
+
+    const response2 = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: prod_input1
+    });
+
+    expect(response1.status).toBe(200);
+    expect(response2.status).toBe(400);
+  });
+
+  test('HTTP 200 multiple non duplicate products', async () => {    
+    prisma.product.create.mockResolvedValueOnce({
+      productId: 'PROD-12345',
+      sellerId: '12345',
+      name: "item1",
+      description: "does xyz",
+      cost: 24,
+      brand: "brand1",
+      family: "series1",
+      onSpecial: false,
+      discount: 0.2,
+      productTier: 1,
+      nextProduct: "",
+      releaseDate: "2025-04-05"
+    })
+    .mockResolvedValueOnce({
+      productId: 'PROD-2',
+      sellerId: '12345',
+      name: "item1",
+      description: "does xyz",
+      cost: 24,
+      brand: "brand1",
+      family: "series1",
+      onSpecial: false,
+      discount: 0.2,
+      productTier: 1,
+      nextProduct: "",
+      releaseDate: "2025-04-05"
+    })
+
+    const response1 = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: prod_input1
+    });
+
+    const response2 = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Valid token'
+      },
+      body: prod_input2
+    });
+
+    expect(response1.status).toBe(200);
+    expect(response2.status).toBe(200);
+  });
 });
+
