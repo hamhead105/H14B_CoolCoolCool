@@ -1,4 +1,4 @@
-import { createProduct } from '../services/productService.js';
+import { createProduct, getProductsByAttributes } from '../services/productService.js';
 
 export async function postProduct(req, res) {
   const {productId, sellerId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
@@ -25,13 +25,12 @@ export async function postProduct(req, res) {
         nextProduct: nextProduct
       });
     } catch (error) {
-        console.error(error);
-            return res.status(400).json({
-            error: "Duplicate order: A product with this ID already exists.",
-        });
+      console.error(error);
+          return res.status(400).json({
+          error: "Duplicate order: A product with this ID already exists.",
+      });
     }
 
-    // todo make productId
     return res.status(200).json({
         productId: productId,
         name: name,
@@ -39,5 +38,31 @@ export async function postProduct(req, res) {
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function getProducts(req, res) {
+  const { name, brand, family, onSpecial } = req.query;
+
+  try {
+    let specialBool = undefined;
+    if (onSpecial === 'true') specialBool = true;
+    if (onSpecial === 'false') specialBool = false;
+
+    const matchProducts = await getProductsByAttributes(
+      brand, 
+      family, 
+      specialBool, 
+      name
+    );
+
+    return res.status(200).json(matchProducts);
+
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    return res.status(500).json({ 
+      error: "Error retrieving products", 
+      details: error.message 
+    });
   }
 }
