@@ -72,9 +72,6 @@ export async function getProductId(req, res) {
 
   try {
     const found = await getProductById(orderId);
-    console.log("-> URL Param ID:", orderId);
-    console.log("-> Is getProductById a Mock?", getProductById.toString());
-    console.log("-> Database Result:", found);
 
     if (!found) {
       return res.status(404).json({ error: 'Product not found' });
