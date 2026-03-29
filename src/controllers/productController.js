@@ -1,4 +1,4 @@
-import { createProduct, getProductsByAttributes, getProductById } from '../services/productService.js';
+import { createProduct, getProductsByAttributes, getProductById, updateProduct, getAllProducts } from '../services/productService.js';
 
 export async function postProduct(req, res) {
   const {productId, sellerId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
@@ -68,10 +68,10 @@ export async function getProducts(req, res) {
 }
 
 export async function getProductId(req, res) {
-  const orderId = req.params.id;
+  const productId = req.params.id;
 
   try {
-    const found = await getProductById(orderId);
+    const found = await getProductById(productId);
 
     if (!found) {
       return res.status(404).json({ error: 'Product not found' });
@@ -80,6 +80,36 @@ export async function getProductId(req, res) {
     return res.status(200).json(found);
 
   } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function putProduct(req, res) {
+  const productId = req.params.id;
+
+  try {
+    const existing = await getProductById(productId);
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const mergedInput = {
+      name: req.body.name ?? existing.name,
+      description: req.body.description ?? existing.description,
+      cost: req.body.cost ?? existing.cost,
+      discount: req.body.discount ?? existing.discount,
+      onSpecial: req.body.onSpecial ?? existing.onSpecial,
+    };
+
+    await updateProduct(productId, {
+      inputData: mergedInput,
+    });
+
+    return res.status(200).json(await getProductById(productId));
+  }
+  catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
   }

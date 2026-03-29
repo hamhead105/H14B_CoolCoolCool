@@ -1,5 +1,5 @@
 import express from 'express';
-import { postProduct, getProducts, getProductId } from '../controllers/productController.js';
+import { postProduct, getProducts, getProductId, putProduct } from '../controllers/productController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -22,6 +22,10 @@ router.get('/:id', (req, res, next) => {
   getProductId(req, res);
 });
 
-
+router.put('/:id', (req, res, next) => {
+  authMiddleware(req, res, next);
+}, (req, res) => {
+  putProduct(req, res);
+});
 
 export default router;
