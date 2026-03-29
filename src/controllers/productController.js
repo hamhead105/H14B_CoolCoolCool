@@ -1,4 +1,4 @@
-import { createProduct, getProductsByAttributes } from '../services/productService.js';
+import { createProduct, getProductsByAttributes, getProductById } from '../services/productService.js';
 
 export async function postProduct(req, res) {
   const {productId, sellerId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
@@ -64,5 +64,23 @@ export async function getProducts(req, res) {
       error: "Error retrieving products", 
       details: error.message 
     });
+  }
+}
+
+export async function getProductId(req, res) {
+  const orderId = req.params.id;
+
+  try {
+    const found = await getProductById(orderId);
+
+    if (!found) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    return res.status(200).json(found);
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
   }
 }
