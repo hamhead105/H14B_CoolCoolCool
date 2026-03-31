@@ -1,5 +1,5 @@
 {
-    "sellerId": "123455", 
+    "seller": "123455", 
     "releaseDate": "2025-04-05", 
     "onSpecial": false, 
     "discount": 0.2, 

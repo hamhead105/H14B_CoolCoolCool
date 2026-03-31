@@ -22,6 +22,7 @@ await jest.unstable_mockModule('jsonwebtoken', () => ({
       if (token === 'Invalid token' || !token) {
         throw new Error('invalid token');
       }
+      if (token === 'Seller token') return { sellerId: 1, role: 'seller' };
       return { buyerId: 1, role: 'buyer' };
     })
   }
@@ -71,6 +72,21 @@ describe('POST /orders', () => {
     });
 
     expect(response.status).toBe(400);
+  });
+
+  test('HTTP 403: seller cannot create orders', async () => {
+    const response = await fetch(`${url}/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Seller token'
+      },
+      body: creation_input1
+    });
+
+    expect(response.status).toBe(403);
+    const data = await response.json();
+    expect(data.error).toMatch(/Only buyers/);
   });
 
   test('HTTP 401: invalid or missing token', async () => {
@@ -132,6 +148,14 @@ describe('POST /orders', () => {
       loyaltyPointsRedeemed: 0,
       ublDocument: expect.any(String)
     });
+
+    expect(prisma.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          buyerId: 1
+        })
+      })
+    );
 
     expect(data.ublDocument.replace(/\s/g, '')).toEqual(creation_expectedContent.replace(/\s/g, ''));
   });

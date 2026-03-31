@@ -1,6 +1,6 @@
 {
     "productId": "PROD-2",
-    "sellerId": "12345", 
+    "seller": "12345", 
     "name": "item1", 
     "description": "does xyz", 
     "cost": 24,

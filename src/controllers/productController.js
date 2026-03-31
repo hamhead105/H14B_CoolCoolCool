@@ -1,9 +1,16 @@
 import { createProduct } from '../services/productService.js';
 
 export async function postProduct(req, res) {
-  const {productId, sellerId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
+  
+  const { sellerId, role } = req.user;
 
-  if (!productId || !sellerId || !name || cost === undefined || !description || !brand || !family || !releaseDate || onSpecial === undefined || discount === undefined) {
+  if (role !== 'seller') {
+    return res.status(403).json({ error: 'Only sellers can create product listings.' });
+  }
+
+  const {productId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
+
+  if (!productId || !name || cost === undefined || !description || !brand || !family || !releaseDate || onSpecial === undefined || discount === undefined) {
     return res.status(422).json({
       error: 'Missing required fields'
     });
@@ -25,10 +32,10 @@ export async function postProduct(req, res) {
         nextProduct: nextProduct
       });
     } catch (error) {
-        console.error(error);
-            return res.status(400).json({
-            error: "Duplicate order: A product with this ID already exists.",
-        });
+      if (error.code === 'P2002') {
+        return res.status(400).json({ error: "A product with this ID already exists." });
+      }
+      return res.status(500).json({ error: error.message });
     }
 
     // todo make productId
