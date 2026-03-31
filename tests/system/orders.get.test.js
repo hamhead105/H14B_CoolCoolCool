@@ -21,6 +21,7 @@ await jest.unstable_mockModule('jsonwebtoken', () => ({
       if (token === 'Invalid token' || !token) {
         throw new Error('invalid token');
       }
+      if (token === 'Seller token') return { sellerId: 1, role: 'seller' };
       return { buyerId: 1, role: 'buyer' };
     })
   }
