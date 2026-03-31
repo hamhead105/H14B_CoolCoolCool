@@ -4,6 +4,14 @@ import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders }
 const LOYALTY_COEFF = 0.08;
 
 export async function postOrder(req, res) {
+  
+  const buyerId = req.user.buyerId;
+  const role = req.user.role;
+
+  if (role !== 'buyer') {
+    return res.status(403).json({ error: 'Only buyers can create orders.' });
+  }
+  
   const { order, buyer, seller, delivery, tax, items, loyaltyPointsRedeemed } = req.body;
 
   if (!order?.id || !buyer?.companyId || !items || !Array.isArray(items)) {
@@ -21,6 +29,7 @@ export async function postOrder(req, res) {
     try {
       await createOrder({
         orderId: order.id,
+        buyerId: buyerId,
         status: 'order placed',
         inputData: req.body,
         totalCost: taxAmount + payableAmount,

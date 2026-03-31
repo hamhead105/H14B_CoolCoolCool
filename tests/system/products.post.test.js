@@ -22,7 +22,9 @@ await jest.unstable_mockModule('jsonwebtoken', () => ({
       if (token === 'Invalid token' || !token) {
         throw new Error('invalid token');
       }
-      return { buyerId: 1, role: 'buyer' };
+      if (token === 'Buyer token') return { buyerId: 1, role: 'buyer' };
+
+      return { sellerId: 5, role: 'seller' };
     })
   }
 }));
@@ -58,6 +60,19 @@ beforeEach(async () => {
 });
 
 describe('POST /products', () => {
+
+  test('HTTP 403: buyer cannot create products', async () => {
+    const response = await fetch(`${url}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Buyer token'
+      },
+      body: prod_input1
+    });
+
+    expect(response.status).toBe(403);
+  });
 
   test('HTTP 400: malformed JSON', async () => {
     const response = await fetch(`${url}/products`, {
@@ -98,7 +113,7 @@ describe('POST /products', () => {
   test('HTTP 200: creates product and returns right json', async () => {
     prisma.product.create.mockResolvedValue({
       productId: '-1',
-      sellerId: '12345',
+      sellerId: '5',
       name: "item1",
       description: "does xyz",
       cost: 24,
@@ -122,6 +137,14 @@ describe('POST /products', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    
+    expect(prisma.product.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          sellerId: 5
+        })
+      })
+    );
 
     expect(data).toMatchObject({
         productId: "PROD-12345",
@@ -138,7 +161,7 @@ describe('POST /products', () => {
     
     prisma.product.create.mockResolvedValueOnce({
       productId: 'PROD-12345',
-      sellerId: '12345',
+      sellerId: '5',
       name: "item1",
       description: "does xyz",
       cost: 24,
@@ -177,7 +200,7 @@ describe('POST /products', () => {
   test('HTTP 200 multiple non duplicate products', async () => {    
     prisma.product.create.mockResolvedValueOnce({
       productId: 'PROD-12345',
-      sellerId: '12345',
+      sellerId: '5',
       name: "item1",
       description: "does xyz",
       cost: 24,
@@ -191,7 +214,7 @@ describe('POST /products', () => {
     })
     .mockResolvedValueOnce({
       productId: 'PROD-2',
-      sellerId: '12345',
+      sellerId: '5',
       name: "item1",
       description: "does xyz",
       cost: 24,
