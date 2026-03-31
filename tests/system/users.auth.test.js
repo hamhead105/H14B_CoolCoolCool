@@ -207,7 +207,6 @@ test('HTTP 401: wrong password', async () => {
   });
 });
 
-
 describe('POST /sellers/register', () => {
   const validSeller = {
     name: 'Hardware Co Pty Ltd',
