@@ -10,10 +10,51 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Buyer {
+  buyerId       Int      @id @default(autoincrement())
+  name          String
+  email         String   @unique
+  password      String
+  street        String
+  city          String
+  postalCode    String
+  countryCode   String
+  companyId     String?
+  taxSchemeId   String?
+  contactPhone  String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  orders        Order[]
+}
+
+model Seller {
+  sellerId      Int      @id @default(autoincrement())
+  name          String
+  email         String   @unique
+  password      String
+  street        String
+  city          String
+  postalCode    String
+  countryCode   String
+  companyId     String
+  legalEntityId String
+  taxSchemeId   String
+  contactName   String
+  contactPhone  String
+  contactEmail  String
+  createdAt     DateTime @default(now())
+  orders        Order[]
 }
 
 model Order {
   orderId                  String   @id
+  buyerId                  Int?
+  sellerId                 Int?
+  buyer                    Buyer?   @relation(fields: [buyerId], references: [buyerId])
+  seller                   Seller?  @relation(fields: [sellerId], references: [sellerId])
   status                   String
   inputData                Json
   totalCost                Float
@@ -26,38 +67,16 @@ model Order {
 }
 
 model Product {
-  productId                String   @id
-  sellerId                 String
-  name                     String
-  description              String
-  cost                     Float
-  brand                    String
-  family                   String
-  onSpecial                Boolean
-  discount                 Float
-  productTier              Int
-  nextProduct              String
-  releaseDate              DateTime @default(now())
-}
-
-model buyer {
-  buyerId              String  @id
-  encryptedPassword       String
-  firstName               String
-  lastName                String
-  address                 String
-  phoneNumber             String
-  email                   String
-  loyaltyPoints           Int
-}
-
-model seller {
-  sellerId              String  @id
-  encryptedPassword       String
-  company                 String
-  sellerName              String
-  address                 String
-  phoneNumber             String
-  email                   String
-  loyaltyPoints           Int
+  productId   String   @id
+  sellerId    String
+  name        String
+  description String
+  cost        Float
+  brand       String
+  family      String
+  onSpecial   Boolean
+  discount    Float
+  productTier Int
+  nextProduct String
+  releaseDate DateTime @default(now())
 }
