@@ -4,6 +4,9 @@ import orderRoutes from './routes/orders.js';
 import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
 import docsRoutes from './routes/docs.js';
+import buyerRoutes from './routes/buyers.js'
+import sellerRoutes from './routes/sellers.js'
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -14,7 +17,8 @@ app.use('/orders', orderRoutes);
 app.use('/products', productRoutes);
 app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
-
+app.use('/buyers', buyerRoutes);
+app.use('/sellers', sellerRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -29,5 +33,6 @@ app.use((err, req, res, next) => {
 //         console.log(`Server running at http://localhost:${port}`);
 //     });
 // }
+
 
 export default app;
