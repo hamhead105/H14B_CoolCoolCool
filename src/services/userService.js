@@ -28,6 +28,29 @@ export async function registerBuyer(data) {
   return { buyerId: buyer.buyerId, token };
 }
 
+export async function loginBuyer({ email, password }) {
+  const buyer = await prisma.buyer.findUnique({ where: { email } });
+  if (!buyer) {
+    const err = new Error('Invalid credentials');
+    err.code = 'INVALID_CREDENTIALS';
+    throw err;
+  }
+
+  const valid = await bcrypt.compare(password, buyer.password);
+  if (!valid) {
+    const err = new Error('Invalid credentials');
+    err.code = 'INVALID_CREDENTIALS';
+    throw err;
+  }
+
+  const token = jwt.sign(
+    { buyerId: buyer.buyerId, role: 'buyer' },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  return { token, buyerId: buyer.buyerId };
+}
 
 // SELLER
 
@@ -53,4 +76,28 @@ export async function registerSeller(data) {
   );
 
   return { sellerId: seller.sellerId, token };
+}
+
+export async function loginSeller({ email, password }) {
+  const seller = await prisma.seller.findUnique({ where: { email } });
+  if (!seller) {
+    const err = new Error('Invalid credentials');
+    err.code = 'INVALID_CREDENTIALS';
+    throw err;
+  }
+
+  const valid = await bcrypt.compare(password, seller.password);
+  if (!valid) {
+    const err = new Error('Invalid credentials');
+    err.code = 'INVALID_CREDENTIALS';
+    throw err;
+  }
+
+  const token = jwt.sign(
+    { sellerId: seller.sellerId, role: 'seller' },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  return { token, sellerId: seller.sellerId };
 }

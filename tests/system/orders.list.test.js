@@ -12,6 +12,18 @@ await jest.unstable_mockModule('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mPrisma)
 }));
 
+await jest.unstable_mockModule('jsonwebtoken', () => ({
+  default: {
+    sign: jest.fn().mockReturnValue('mock_jwt_token'),
+    verify: jest.fn().mockImplementation((token) => {
+      if (token === 'Invalid token' || !token) {
+        throw new Error('invalid token');
+      }
+      return { buyerId: 1, role: 'buyer' };
+    })
+  }
+}));
+
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
