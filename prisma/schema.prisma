@@ -76,5 +76,5 @@ model Product {
   nextProduct String
   releaseDate DateTime @default(now())
   sellerId    Int
-  seller    Seller   @relation(fields: [sellerId], references: [sellerId])
+  seller      Seller   @relation(fields: [sellerId], references: [sellerId])
 }
