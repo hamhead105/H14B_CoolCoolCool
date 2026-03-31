@@ -12,6 +12,19 @@ await jest.unstable_mockModule('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mPrisma)
 }));
 
+await jest.unstable_mockModule('jsonwebtoken', () => ({
+  default: {
+    sign: jest.fn().mockReturnValue('mock_jwt_token'),
+    verify: jest.fn().mockImplementation((token) => {
+      if (token === 'Invalid token' || !token) {
+        throw new Error('invalid token');
+      }
+      if (token === 'Seller token') return { sellerId: 1, role: 'seller' };
+      return { buyerId: 1, role: 'buyer' };
+    })
+  }
+}));
+
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -114,26 +127,26 @@ describe('GET /orders', () => {
   test('HTTP 200: filters by buyerId', async () => {
     mPrisma.order.findMany.mockResolvedValue([mockOrders[0]]);
 
-    const response = await fetch(`${url}/orders?buyerId=BUYER-123`, {
+    const response = await fetch(`${url}/orders?buyerId=1`, {
       headers: { Authorization: 'Valid token' }
     });
 
     expect(response.status).toBe(200);
     expect(mPrisma.order.findMany).toHaveBeenCalledWith({
-      where: { buyerId: 'BUYER-123' }
+      where: { buyerId: '1' }
     });
   });
 
   test('HTTP 200: filters by both buyerId and status', async () => {
     mPrisma.order.findMany.mockResolvedValue([mockOrders[0]]);
 
-    const response = await fetch(`${url}/orders?buyerId=BUYER-123&status=order+placed`, {
+    const response = await fetch(`${url}/orders?buyerId=1&status=order+placed`, {
       headers: { Authorization: 'Valid token' }
     });
 
     expect(response.status).toBe(200);
     expect(mPrisma.order.findMany).toHaveBeenCalledWith({
-      where: { buyerId: 'BUYER-123', status: 'order placed' }
+      where: { buyerId: '1', status: 'order placed' }
     });
   });
 

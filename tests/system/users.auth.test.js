@@ -12,29 +12,33 @@ const mPrisma = {
   $disconnect: jest.fn()
 };
 
+const mBcrypt = {
+  hash: jest.fn().mockResolvedValue('hashed_password'),
+  compare: jest.fn().mockResolvedValue(true)
+};
+
 await jest.unstable_mockModule('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mPrisma)
 }));
 
-const { PrismaClient } = await import('@prisma/client');
-const prisma = new PrismaClient();
-
-// mock bcrypt so we don't slow tests down with real hashing
 await jest.unstable_mockModule('bcrypt', () => ({
-  default: {
-    hash: jest.fn().mockResolvedValue('hashed_password'),
-    compare: jest.fn().mockResolvedValue(true)
-  }
+  default: mBcrypt
 }));
 
-// mock jsonwebtoken so we get predictable tokens
 await jest.unstable_mockModule('jsonwebtoken', () => ({
   default: {
     sign: jest.fn().mockReturnValue('mock_jwt_token'),
-    verify: jest.fn().mockReturnValue({ buyerId: 1, role: 'buyer' })
+    verify: jest.fn().mockImplementation((token) => {
+      if (token === 'Invalid token' || !token) {
+        throw new Error('invalid token');
+      }
+      return { buyerId: 1, role: 'buyer' };
+    })
   }
 }));
 
+const { PrismaClient } = await import('@prisma/client');
+const prisma = new PrismaClient();
 const { default: app } = await import('../../src/server.js');
 
 let server;
@@ -42,8 +46,7 @@ let url;
 
 beforeAll((done) => {
   server = app.listen(0, () => {
-    const port = server.address().port;
-    url = `http://localhost:${port}`;
+    url = `http://localhost:${server.address().port}`;
     done();
   });
 });
@@ -55,11 +58,11 @@ afterAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mBcrypt.compare.mockResolvedValue(true);
 });
 
 
 describe('POST /buyers/register', () => {
-
   const validBuyer = {
     name: 'John Smith',
     email: 'john@example.com',
@@ -76,7 +79,6 @@ describe('POST /buyers/register', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'John', email: 'john@example.com' })
     });
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data).toHaveProperty('error');
@@ -84,13 +86,11 @@ describe('POST /buyers/register', () => {
 
   test('HTTP 409: email already exists', async () => {
     mPrisma.buyer.findUnique.mockResolvedValue({ buyerId: 1, email: 'john@example.com' });
-
     const response = await fetch(`${url}/buyers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(validBuyer)
     });
-
     expect(response.status).toBe(409);
     const data = await response.json();
     expect(data).toHaveProperty('error');
@@ -110,19 +110,14 @@ describe('POST /buyers/register', () => {
       loyaltyPoints: 0,
       createdAt: new Date()
     });
-
     const response = await fetch(`${url}/buyers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(validBuyer)
     });
-
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data).toMatchObject({
-      buyerId: 1,
-      token: 'mock_jwt_token'
-    });
+    expect(data).toMatchObject({ buyerId: 1, token: 'mock_jwt_token' });
   });
 
   test('HTTP 200: optional fields are accepted', async () => {
@@ -142,7 +137,6 @@ describe('POST /buyers/register', () => {
       loyaltyPoints: 0,
       createdAt: new Date()
     });
-
     const response = await fetch(`${url}/buyers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -154,19 +148,66 @@ describe('POST /buyers/register', () => {
         contactPhone: '0400000000'
       })
     });
-
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data).toMatchObject({
-      buyerId: 2,
-      token: 'mock_jwt_token'
-    });
+    expect(data).toMatchObject({ buyerId: 2, token: 'mock_jwt_token' });
   });
 });
 
 
-describe('POST /sellers/register', () => {
+describe('POST /buyers/login', () => {
+  const validLogin = { email: 'john@example.com', password: 'password123' };
 
+  test('HTTP 400: missing required fields', async () => {
+    const response = await fetch(`${url}/buyers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'john@example.com' })
+    });
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data).toHaveProperty('error');
+  });
+
+  test('HTTP 401: buyer not found', async () => {
+    mPrisma.buyer.findUnique.mockResolvedValue(null);
+    const response = await fetch(`${url}/buyers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validLogin)
+    });
+    expect(response.status).toBe(401);
+    const data = await response.json();
+    expect(data).toHaveProperty('error');
+  });
+
+test('HTTP 401: wrong password', async () => {
+  mPrisma.buyer.findUnique.mockResolvedValue({ buyerId: 1, email: 'john@example.com', password: 'hashed_password' });
+  mBcrypt.compare.mockResolvedValueOnce(false);
+  const response = await fetch(`${url}/buyers/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(validLogin)
+  });
+  expect(response.status).toBe(401);
+  const data = await response.json();
+  expect(data).toHaveProperty('error');
+});
+
+  test('HTTP 200: returns token and buyerId', async () => {
+    mPrisma.buyer.findUnique.mockResolvedValue({ buyerId: 1, email: 'john@example.com', password: 'hashed_password' });
+    const response = await fetch(`${url}/buyers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validLogin)
+    });
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toMatchObject({ token: 'mock_jwt_token', buyerId: 1 });
+  });
+});
+
+describe('POST /sellers/register', () => {
   const validSeller = {
     name: 'Hardware Co Pty Ltd',
     email: 'contact@hardwareco.com',
@@ -189,7 +230,6 @@ describe('POST /sellers/register', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: 'Hardware Co', email: 'contact@hardwareco.com' })
     });
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data).toHaveProperty('error');
@@ -197,13 +237,11 @@ describe('POST /sellers/register', () => {
 
   test('HTTP 409: email already exists', async () => {
     mPrisma.seller.findUnique.mockResolvedValue({ sellerId: 1, email: 'contact@hardwareco.com' });
-
     const response = await fetch(`${url}/sellers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(validSeller)
     });
-
     expect(response.status).toBe(409);
     const data = await response.json();
     expect(data).toHaveProperty('error');
@@ -228,32 +266,78 @@ describe('POST /sellers/register', () => {
       contactEmail: 'jane@hardwareco.com',
       createdAt: new Date()
     });
-
     const response = await fetch(`${url}/sellers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(validSeller)
     });
-
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data).toMatchObject({
-      sellerId: 1,
-      token: 'mock_jwt_token'
-    });
+    expect(data).toMatchObject({ sellerId: 1, token: 'mock_jwt_token' });
   });
 
   test('HTTP 400: missing one required seller field', async () => {
     const { contactEmail, ...missingContactEmail } = validSeller;
-
     const response = await fetch(`${url}/sellers/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(missingContactEmail)
     });
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data).toHaveProperty('error');
+  });
+});
+
+
+describe('POST /sellers/login', () => {
+  const validLogin = { email: 'contact@hardwareco.com', password: 'password123' };
+
+  test('HTTP 400: missing required fields', async () => {
+    const response = await fetch(`${url}/sellers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'contact@hardwareco.com' })
+    });
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data).toHaveProperty('error');
+  });
+
+  test('HTTP 401: seller not found', async () => {
+    mPrisma.seller.findUnique.mockResolvedValue(null);
+    const response = await fetch(`${url}/sellers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validLogin)
+    });
+    expect(response.status).toBe(401);
+    const data = await response.json();
+    expect(data).toHaveProperty('error');
+  });
+
+test('HTTP 401: wrong password', async () => {
+  mPrisma.seller.findUnique.mockResolvedValue({ sellerId: 1, email: 'contact@hardwareco.com', password: 'hashed_password' });
+  mBcrypt.compare.mockResolvedValueOnce(false);
+  const response = await fetch(`${url}/sellers/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(validLogin)
+  });
+  expect(response.status).toBe(401);
+  const data = await response.json();
+  expect(data).toHaveProperty('error');
+});
+
+  test('HTTP 200: returns token and sellerId', async () => {
+    mPrisma.seller.findUnique.mockResolvedValue({ sellerId: 1, email: 'contact@hardwareco.com', password: 'hashed_password' });
+    const response = await fetch(`${url}/sellers/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validLogin)
+    });
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toMatchObject({ token: 'mock_jwt_token', sellerId: 1 });
   });
 });

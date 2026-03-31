@@ -14,6 +14,19 @@ await jest.unstable_mockModule('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mPrisma)
 }));
 
+await jest.unstable_mockModule('jsonwebtoken', () => ({
+  default: {
+    sign: jest.fn().mockReturnValue('mock_jwt_token'),
+    verify: jest.fn().mockImplementation((token) => {
+      if (token === 'Invalid token' || !token) {
+        throw new Error('invalid token');
+      }
+      if (token === 'Seller token') return { sellerId: 1, role: 'seller' };
+      return { buyerId: 1, role: 'buyer' };
+    })
+  }
+}));
+
 const mockCreateXml = jest.fn();
 await jest.unstable_mockModule('../../src/services/xmlService.js', () => ({
   create_xml: mockCreateXml,
@@ -101,7 +114,7 @@ describe('DELETE /orders/:id', () => {
 
     expect(response.status).toBe(401);
     const data = await response.json();
-    expect(data.error).toBe('Unauthorized');
+    expect(data.error).toBe('Invalid token');
   });
 
   test('should return 404 when order does not exist', async () => {
