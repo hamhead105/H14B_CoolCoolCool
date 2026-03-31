@@ -16,6 +16,19 @@ await jest.unstable_mockModule('@prisma/client', () => ({
     PrismaClient: jest.fn(() => mPrisma)
 }));
 
+await jest.unstable_mockModule('jsonwebtoken', () => ({
+  default: {
+    sign: jest.fn().mockReturnValue('mock_jwt_token'),
+    verify: jest.fn().mockImplementation((token) => {
+      if (token === 'Invalid token' || !token) {
+        throw new Error('invalid token');
+      }
+      if (token === 'Seller token') return { sellerId: 1, role: 'seller' };
+      return { buyerId: 1, role: 'buyer' };
+    })
+  }
+}));
+
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -64,7 +77,7 @@ describe('GET /products/', () => {
     test('HTTP 200: retrieve single product by Id', async () => {
         prisma.product.findUnique.mockResolvedValueOnce({
             productId: 'PROD1',
-            sellerId: 'seller1',
+            sellerId: '1',
             name: "item1",
             description: "does xyz",
             cost: 24,
@@ -88,7 +101,7 @@ describe('GET /products/', () => {
         const data = await response.json();
 
         expect(data).toEqual(
-            expect.objectContaining({ productId: 'PROD1', name: "item1", sellerId: 'seller1' })
+            expect.objectContaining({ productId: 'PROD1', name: "item1", sellerId: '1' })
         );
     });
 

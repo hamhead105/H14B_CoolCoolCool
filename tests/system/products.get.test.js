@@ -16,6 +16,19 @@ await jest.unstable_mockModule('@prisma/client', () => ({
     PrismaClient: jest.fn(() => mPrisma)
 }));
 
+await jest.unstable_mockModule('jsonwebtoken', () => ({
+  default: {
+    sign: jest.fn().mockReturnValue('mock_jwt_token'),
+    verify: jest.fn().mockImplementation((token) => {
+      if (token === 'Invalid token' || !token) {
+        throw new Error('invalid token');
+      }
+      if (token === 'Seller token') return { sellerId: 1, role: 'seller' };
+      return { buyerId: 1, role: 'buyer' };
+    })
+  }
+}));
+
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -64,7 +77,7 @@ describe('GET /products/', () => {
     test('HTTP 200: retrieve single product by name', async () => {
         prisma.product.findMany.mockResolvedValueOnce([{
             productId: 'PROD-1',
-            sellerId: 'seller1',
+            sellerId: '1',
             name: "item1",
             description: "does xyz",
             cost: 24,
@@ -93,7 +106,7 @@ describe('GET /products/', () => {
 
         expect(data).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ productId: 'PROD-1', name: "item1", sellerId: 'seller1' })
+                expect.objectContaining({ productId: 'PROD-1', name: "item1", sellerId: '1' })
             ])
         );
     });
@@ -101,7 +114,7 @@ describe('GET /products/', () => {
     test('HTTP 200: retrieve single product by product name', async () => {
         prisma.product.findMany.mockResolvedValueOnce([{
             productId: 'PROD-1',
-            sellerId: 'seller1',
+            sellerId: '1',
             name: "item1",
             description: "does xyz",
             cost: 24,
@@ -130,7 +143,7 @@ describe('GET /products/', () => {
 
         expect(data).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ productId: 'PROD-1', name: "item1", sellerId: 'seller1' })
+                expect.objectContaining({ productId: 'PROD-1', name: "item1", sellerId: '1' })
             ])
         );
     });
@@ -139,7 +152,7 @@ describe('GET /products/', () => {
         prisma.product.findMany.mockResolvedValueOnce([
             {
                 productId: 'PROD-1',
-                sellerId: 'seller1',
+                sellerId: '1',
                 name: "item1",
                 description: "does xyz",
                 cost: 24,
@@ -186,7 +199,7 @@ describe('GET /products/', () => {
 
         expect(data).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ productId: 'PROD-1', name: "item1", sellerId: 'seller1' })
+                expect.objectContaining({ productId: 'PROD-1', name: "item1", sellerId: '1' })
             ])
         );
     });
@@ -195,7 +208,7 @@ describe('GET /products/', () => {
         prisma.product.findMany.mockResolvedValueOnce([
             {
                 productId: 'PROD-1',
-                sellerId: 'seller1',
+                sellerId: '1',
                 name: "item1",
                 description: "does xyz",
                 cost: 24,
@@ -209,7 +222,7 @@ describe('GET /products/', () => {
             },
             {
                 productId: 'PROD-2',
-                sellerId: 'seller1',
+                sellerId: '1',
                 name: "item2",
                 description: "does xyz",
                 cost: 24,
@@ -242,8 +255,8 @@ describe('GET /products/', () => {
 
         expect(data).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ sellerId: 'seller1', name: "item1" }),
-                expect.objectContaining({ sellerId: 'seller1', name: "item2" })
+                expect.objectContaining({ sellerId: '1', name: "item1" }),
+                expect.objectContaining({ sellerId: '1', name: "item2" })
             ])
         );
     });
@@ -252,7 +265,7 @@ describe('GET /products/', () => {
         prisma.product.findMany.mockResolvedValueOnce([
             {
                 productId: 'PROD-1',
-                sellerId: 'seller1',
+                sellerId: '1',
                 name: "item1",
                 description: "does xyz",
                 cost: 24,
@@ -266,7 +279,7 @@ describe('GET /products/', () => {
             },
             {
                 productId: 'PROD-2',
-                sellerId: 'seller1',
+                sellerId: '1',
                 name: "item2",
                 description: "does xyz",
                 cost: 24,
@@ -299,8 +312,8 @@ describe('GET /products/', () => {
 
         expect(data).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ sellerId: 'seller1', name: "item1" }),
-                expect.objectContaining({ sellerId: 'seller1', name: "item2" })
+                expect.objectContaining({ sellerId: '1', name: "item1" }),
+                expect.objectContaining({ sellerId: '1', name: "item2" })
             ])
         );
     });

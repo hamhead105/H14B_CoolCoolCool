@@ -61,7 +61,6 @@ beforeEach(() => {
   mBcrypt.compare.mockResolvedValue(true);
 });
 
-// ── BUYER REGISTER ─────────────────────────────────────────
 
 describe('POST /buyers/register', () => {
   const validBuyer = {
@@ -155,7 +154,6 @@ describe('POST /buyers/register', () => {
   });
 });
 
-// ── BUYER LOGIN ────────────────────────────────────────────
 
 describe('POST /buyers/login', () => {
   const validLogin = { email: 'john@example.com', password: 'password123' };
@@ -209,7 +207,6 @@ test('HTTP 401: wrong password', async () => {
   });
 });
 
-// ── SELLER REGISTER ────────────────────────────────────────
 
 describe('POST /sellers/register', () => {
   const validSeller = {
@@ -293,7 +290,6 @@ describe('POST /sellers/register', () => {
   });
 });
 
-// ── SELLER LOGIN ───────────────────────────────────────────
 
 describe('POST /sellers/login', () => {
   const validLogin = { email: 'contact@hardwareco.com', password: 'password123' };
