@@ -1,4 +1,4 @@
-import { createProduct, getProductsByAttributes, getProductById, updateProduct, getAllProducts } from '../services/productService.js';
+import { createProduct, getProductsByAttributes, getProductById, updateProduct, getAllProducts, deleteProductById } from '../services/productService.js';
 
 export async function postProduct(req, res) {
   
@@ -119,5 +119,31 @@ export async function putProduct(req, res) {
   catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function deleteProduct(req, res) {
+    const productId = req.params.id;
+
+  try {
+    const found = await getProductById(productId);
+
+    if (!found) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    await deleteProductById(productId);
+
+    return res.status(200).json({
+      message: 'Product deleted successfully',
+      productId: productId,
+      deletedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: 'Internal server error',
+      detail: error.message
+    });
   }
 }
