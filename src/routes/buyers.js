@@ -1,5 +1,6 @@
 import express from 'express';
-import { register, login } from '../controllers/buyerController.js';
+import { register, login, getProfile } from '../controllers/buyerController.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -56,5 +57,26 @@ router.post('/register', register);
  *       401: { description: Invalid credentials }
  */
 router.post('/login', login);
+
+
+/**
+ * @swagger
+ * /buyers/{id}:
+ *   get:
+ *     summary: Get a buyer's profile
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Buyer profile }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.get('/:id', authMiddleware, getProfile);
+
 
 export default router;
