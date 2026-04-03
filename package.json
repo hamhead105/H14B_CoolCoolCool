@@ -1,0 +1,33 @@
+{
+  "name": "h14b_coolcoolcool",
+  "version": "1.0.0",
+  "description": "Order Creation API that generates UBL 2.1 XML documents from structured JSON input. \r Built as part of a SaaS ecosystem for digital trade document exchange.",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm start --prefix frontend",
+    "test": "npm test --prefix backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hamhead105/H14B_CoolCoolCool.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hamhead105/H14B_CoolCoolCool/issues"
+  },
+  "homepage": "https://github.com/hamhead105/H14B_CoolCoolCool#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/backend/src/server.js" },
+    { "source": "/(.*)", "destination": "/frontend/$1" }
+  ]
+  
+}

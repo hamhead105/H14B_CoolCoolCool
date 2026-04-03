@@ -1,6 +1,14 @@
 import jwt from 'jsonwebtoken';
 
 export function authMiddleware(req, res, next) {
+
+  // TODO remove when done testing
+  if (process.env.NODE_ENV === 'development') {
+    req.user = { id: 'test-user-id' }; // Mock a user object
+    return next(); // Skip the check!
+  }
+  // REMOVE ENDS HERE
+
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
