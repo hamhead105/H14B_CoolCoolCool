@@ -1,4 +1,4 @@
-import { createProduct, getProductsByAttributes, getProductById, updateProduct, getAllProducts, deleteProductById } from '../services/productService.js';
+import { createProduct, getProductsByAttributes, getProductById, updateProduct, getAllProducts, deleteProductById, getProductsByFamily } from '../services/productService.js';
 
 export async function postProduct(req, res) {
   
@@ -144,6 +144,26 @@ export async function deleteProduct(req, res) {
     return res.status(500).json({
       message: 'Internal server error',
       detail: error.message
+    });
+  }
+}
+
+export async function getSimilarProducts(req, res) {
+  const productId = req.params.id;
+  const productToMatch = getProductById(productId);
+  const family = productToMatch.family;
+
+  try {
+
+    const matchProducts = await getProductsByFamily(family);
+
+    return res.status(200).json(matchProducts);
+
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    return res.status(500).json({ 
+      error: "Error retrieving products", 
+      details: error.message 
     });
   }
 }
