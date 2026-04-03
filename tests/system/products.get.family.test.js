@@ -58,19 +58,33 @@ beforeEach(async () => {
 describe('GET /products/:id/family', () => {
 
     test('HTTP 401: invalid token', async () => {
-        const response = await fetch(`${url}/products/`, {
+        const response = await fetch(`${url}/products/PROD1/family`, {
             headers: { Authorization: 'Invalid token' }
         });
         expect(response.status).toBe(401);
     });
 
     test('HTTP 401: missing token', async () => {
-        const response = await fetch(`${url}/products/`);
+        const response = await fetch(`${url}/products/PROD1/family`);
         expect(response.status).toBe(401);
     });
 
-
     test('HTTP 200: retrieve one family product', async () => {
+        prisma.product.findUnique.mockResolvedValueOnce({
+            productId: 'PROD-BASE',
+            sellerId: '1',
+            name: "item1",
+            description: "does xyz",
+            cost: 24,
+            brand: "brand1",
+            family: "series1",
+            onSpecial: false,
+            discount: 0.2,
+            productTier: 1,
+            nextProduct: "",
+            releaseDate: "2025-04-05"
+        });
+
         prisma.product.findMany.mockResolvedValueOnce([{
             productId: 'PROD-1',
             sellerId: '1',
@@ -103,6 +117,21 @@ describe('GET /products/:id/family', () => {
     });
 
     test('HTTP 200: retrieve multiple family products', async () => {
+        prisma.product.findUnique.mockResolvedValueOnce({
+            productId: 'PROD-BASE',
+            sellerId: '1',
+            name: "item1",
+            description: "does xyz",
+            cost: 24,
+            brand: "brand1",
+            family: "series1",
+            onSpecial: false,
+            discount: 0.2,
+            productTier: 1,
+            nextProduct: "",
+            releaseDate: "2025-04-05"
+        });
+
         prisma.product.findMany.mockResolvedValueOnce([
         {
             productId: 'PROD-1',
@@ -176,4 +205,17 @@ describe('GET /products/:id/family', () => {
             ],
         );
     });
+
+    test('HTTP 404: Product not found', async () => {
+        prisma.product.findUnique.mockResolvedValueOnce(null);
+        prisma.product.findMany.mockResolvedValueOnce(null);
+        const response = await fetch(`${url}/products/NOTEXIST/family`, {
+            method: 'GET',
+            headers: {
+                Authorization: 'Valid token'
+            }
+        });
+        expect(response.status).toBe(404);
+    });
+
 });

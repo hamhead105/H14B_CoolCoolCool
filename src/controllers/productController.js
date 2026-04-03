@@ -150,10 +150,15 @@ export async function deleteProduct(req, res) {
 
 export async function getProductFamily(req, res) {
   const productId = req.params.id;
-  const productToMatch = getProductById(productId);
-  const family = productToMatch.family;
-
+  
   try {
+    const productToMatch = await getProductById(productId);
+
+    if (!productToMatch) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    const family = productToMatch.family;
+
     const matchProducts = await getProductsByFamily(family);
     return res.status(200).json(matchProducts);
 
