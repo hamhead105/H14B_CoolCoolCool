@@ -1,4 +1,4 @@
-import { registerBuyer, loginBuyer, getBuyerById, deleteBuyer } from '../services/userService.js'; 
+import { registerBuyer, loginBuyer, getBuyerById, deleteBuyer, updateBuyer } from '../services/userService.js'; 
 
 export async function register(req, res) {
   const { name, email, password, street, city, postalCode, countryCode } = req.body;
@@ -50,3 +50,17 @@ export async function deleteProfile(req, res) {
     return res.status(500).json({ error: e.message });
   }
 }
+
+export async function updateProfile(req, res) {
+  const buyerId = parseInt(req.params.id);
+  if (isNaN(buyerId)) return res.status(400).json({ error: 'Invalid buyer ID' });
+  try {
+    const buyer = await getBuyerById(buyerId);
+    if (!buyer) return res.status(404).json({ error: 'Buyer not found' });
+    const updated = await updateBuyer(buyerId, req.body);
+    return res.status(200).json(updated);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
