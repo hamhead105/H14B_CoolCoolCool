@@ -1,5 +1,5 @@
 import express from 'express';
-import { postProduct, getProducts, getProductId, putProduct, deleteProduct, getSimilarProducts } from '../controllers/productController.js';
+import { postProduct, getProducts, getProductId, putProduct, deleteProduct, getProductFamily } from '../controllers/productController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -34,10 +34,10 @@ router.delete('/:id', (req, res, next) => {
   deleteProduct(req, res);
 });
 
-router.get('/:id/similar', (req, res, next) => {
+router.get('/:id/family', (req, res, next) => {
   authMiddleware(req, res, next);
 }, (req, res) => {
-  getSimilarProducts(req, res);
+  getProductFamily(req, res);
 });
 
 export default router;

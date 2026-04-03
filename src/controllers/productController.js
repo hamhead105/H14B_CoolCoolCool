@@ -148,15 +148,13 @@ export async function deleteProduct(req, res) {
   }
 }
 
-export async function getSimilarProducts(req, res) {
+export async function getProductFamily(req, res) {
   const productId = req.params.id;
   const productToMatch = getProductById(productId);
   const family = productToMatch.family;
 
   try {
-
     const matchProducts = await getProductsByFamily(family);
-
     return res.status(200).json(matchProducts);
 
   } catch (error) {

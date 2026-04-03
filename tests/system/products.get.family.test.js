@@ -34,10 +34,6 @@ const prisma = new PrismaClient();
 
 const { default: app } = await import('../../src/server.js');
 
-const prod_input1 = fs.readFileSync('tests/inputs/prod_post_input1.json', 'utf-8');
-const prod_input2 = fs.readFileSync('tests/inputs/prod_post_input2.json', 'utf-8');
-const prod_input_missing = fs.readFileSync('tests/inputs/prod_post_input_missing.json', 'utf-8');
-
 let server;
 let url;
 
@@ -59,7 +55,7 @@ beforeEach(async () => {
     await prisma.product.deleteMany({});
 });
 
-describe('GET /products/:id/similar', () => {
+describe('GET /products/:id/family', () => {
 
     test('HTTP 401: invalid token', async () => {
         const response = await fetch(`${url}/products/`, {
@@ -74,7 +70,7 @@ describe('GET /products/:id/similar', () => {
     });
 
 
-    test('HTTP 200: retrieve one similar product', async () => {
+    test('HTTP 200: retrieve one family product', async () => {
         prisma.product.findMany.mockResolvedValueOnce([{
             productId: 'PROD-1',
             sellerId: '1',
@@ -89,7 +85,7 @@ describe('GET /products/:id/similar', () => {
             nextProduct: "",
             releaseDate: "2025-04-05"
         }]);
-        const response = await fetch(`${url}/products/PROD1/similar`, {
+        const response = await fetch(`${url}/products/PROD1/family`, {
             method: 'GET',
             headers: {
                 Authorization: 'Valid token'
@@ -106,7 +102,7 @@ describe('GET /products/:id/similar', () => {
         );
     });
 
-    test('HTTP 200: retrieve multiple similar products', async () => {
+    test('HTTP 200: retrieve multiple family products', async () => {
         prisma.product.findMany.mockResolvedValueOnce([
         {
             productId: 'PROD-1',
@@ -137,7 +133,7 @@ describe('GET /products/:id/similar', () => {
             releaseDate: "2025-04-05"
         },
     ]);
-        const response = await fetch(`${url}/products/PROD1/similar`, {
+        const response = await fetch(`${url}/products/PROD1/family`, {
             method: 'GET',
             headers: {
                 Authorization: 'Valid token'
