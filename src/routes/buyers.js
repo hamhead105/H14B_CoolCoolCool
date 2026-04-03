@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getProfile, deleteProfile, updateProfile } from '../controllers/buyerController.js';
+import { register, login, getProfile, deleteProfile, updateProfile, getLoyalty } from '../controllers/buyerController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -115,5 +115,24 @@ router.delete('/:id', authMiddleware, deleteProfile);
  *       404: { description: Buyer not found }
  */
 router.put('/:id', authMiddleware, updateProfile);
+
+/**
+ * @swagger
+ * /buyers/{id}/loyalty:
+ *   get:
+ *     summary: Get a buyer's loyalty points balance
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Loyalty points balance }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.get('/:id/loyalty', authMiddleware, getLoyalty);
 
 export default router;
