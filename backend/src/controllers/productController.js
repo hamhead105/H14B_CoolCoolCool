@@ -10,7 +10,7 @@ export async function postProduct(req, res) {
 
   const {productId, name, description, cost, brand, family, releaseDate, onSpecial, discount, productTier, nextProduct} = req.body;
 
-  if (!productId || !name || cost === undefined || !description || !brand || !family || !releaseDate || onSpecial === undefined || discount === undefined) {
+  if (!productId || !name || cost === undefined || !description || !brand || !family || !releaseDate) {
     return res.status(422).json({
       error: 'Missing required fields'
     });
@@ -26,9 +26,9 @@ export async function postProduct(req, res) {
         brand: brand,
         family: family,
         releaseDate: releaseDate,
-        onSpecial: onSpecial,
-        discount: discount,
-        productTier: productTier,
+        onSpecial: onSpecial ?? false,
+        discount: discount ?? 0,
+        productTier: productTier ?? 1,
         nextProduct: nextProduct
       });
     } catch (error) {
