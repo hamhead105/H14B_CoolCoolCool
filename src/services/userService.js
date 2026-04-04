@@ -86,6 +86,13 @@ export async function updateBuyer(buyerId, data) {
   });
 }
 
+export async function getBuyerLoyalty(buyerId) {
+  return prisma.buyer.findUnique({
+    where: { buyerId },
+    select: { buyerId: true, loyaltyPoints: true }
+  });
+}
+
 // SELLER
 
 export async function registerSeller(data) {
