@@ -64,6 +64,10 @@ export async function getBuyerById(buyerId) {
   });
 }
 
+export async function deleteBuyer(buyerId) {
+  await prisma.buyer.delete({ where: { buyerId } });
+}
+
 // SELLER
 
 export async function registerSeller(data) {
@@ -125,4 +129,8 @@ export async function getSellerById(sellerId) {
       createdAt: true
     }
   });
+}
+
+export async function deleteSeller(sellerId) {
+  await prisma.seller.delete({ where: { sellerId } });
 }
