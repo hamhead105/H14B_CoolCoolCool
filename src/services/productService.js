@@ -35,3 +35,14 @@ export async function updateProduct(productId, data) {
 export async function getAllProducts(filters) {
   return await prisma.product.findMany({ where: filters });
 }
+
+export async function getProductsByFamily(family) {
+  return await prisma.product.findMany({
+    where: {
+      ...(family && { family })
+    },
+    orderBy: {
+      cost: 'asc'
+    }
+  });
+}
