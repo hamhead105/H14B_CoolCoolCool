@@ -3,8 +3,6 @@ import './App.css';
 
 function App() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   
   // NAVIGATION STATE: 'login', 'register', or 'dashboard'
   const [view, setView] = useState(localStorage.getItem('token') ? 'dashboard' : 'login');
