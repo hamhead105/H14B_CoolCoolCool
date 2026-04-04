@@ -7,16 +7,13 @@
     },
     {
       "src": "frontend/package.json",
-      "use": "@vercel/static-build"
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
     }
   ],
   "rewrites": [
     {
-      "source": "/sellers/(.*)",
-      "destination": "backend/src/server.js"
-    },
-    {
-      "source": "/products/(.*)",
+      "source": "/api/(.*)",
       "destination": "backend/src/server.js"
     },
     {
