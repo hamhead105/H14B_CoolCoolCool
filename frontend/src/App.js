@@ -3,8 +3,8 @@ import './App.css';
 
 function App() {
   const [products, setProducts] = useState([]);
-  const [setLoading] = useState(true);
-  const [setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // NAVIGATION STATE: 'login', 'register', or 'dashboard'
   const [view, setView] = useState(localStorage.getItem('token') ? 'dashboard' : 'login');
@@ -23,6 +23,10 @@ function App() {
     onSpecial: false, discount: 0, productTier: 1, nextProduct: ''
   });
 
+  useEffect(() => {
+    if (view === 'dashboard') fetchProducts();
+  }, [view]);
+
   const fetchProducts = () => {
     fetch('/products/')
       .then(res => res.json())
@@ -32,11 +36,6 @@ function App() {
       })
       .catch(err => setError(err.message));
   };
-
-
-  useEffect(() => {
-    if (view === 'dashboard') fetchProducts();
-  }, [view]);
 
   // --- AUTH HANDLERS ---
 const handleLogin = async (e) => {
@@ -158,6 +157,7 @@ const handleCreateProduct = async (e) => {
   }
 
   // 3. DASHBOARD VIEW (Logged In)
+// 3. DASHBOARD VIEW (Logged In)
   return (
     <div className="store-container">
       <header className="store-header">
@@ -169,6 +169,11 @@ const handleCreateProduct = async (e) => {
           <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </header>
+
+      {/* --- ADDED LOADING AND ERROR UI --- */}
+      {loading && <div className="loading-state">Updating inventory...</div>}
+      {error && <div className="error-banner">Error: {error}</div>}
+      {/* ---------------------------------- */}
 
       {showProductForm && (
         <form className="product-form-overlay" onSubmit={handleCreateProduct}>
@@ -187,6 +192,7 @@ const handleCreateProduct = async (e) => {
       )}
 
       <div className="product-grid">
+        {!loading && products.length === 0 && <p>No products found.</p>}
         {products.map(p => (
           <div key={p.productId || p.id} className="product-card">
             <h3>{p.name}</h3>
