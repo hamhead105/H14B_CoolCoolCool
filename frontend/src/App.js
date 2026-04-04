@@ -3,6 +3,8 @@ import './App.css';
 
 function App() {
   const [products, setProducts] = useState([]);
+  const [setLoading] = useState(true);
+  const [setError] = useState(null);
   
   // NAVIGATION STATE: 'login', 'register', or 'dashboard'
   const [view, setView] = useState(localStorage.getItem('token') ? 'dashboard' : 'login');
@@ -21,10 +23,6 @@ function App() {
     onSpecial: false, discount: 0, productTier: 1, nextProduct: ''
   });
 
-  useEffect(() => {
-    if (view === 'dashboard') fetchProducts();
-  }, [view]);
-
   const fetchProducts = () => {
     fetch('/products/')
       .then(res => res.json())
@@ -34,6 +32,11 @@ function App() {
       })
       .catch(err => setError(err.message));
   };
+
+
+  useEffect(() => {
+    if (view === 'dashboard') fetchProducts();
+  }, [view]);
 
   // --- AUTH HANDLERS ---
 const handleLogin = async (e) => {
