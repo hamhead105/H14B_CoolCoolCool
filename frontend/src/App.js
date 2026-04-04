@@ -27,14 +27,41 @@ function App() {
     if (view === 'dashboard') fetchProducts();
   }, [view]);
 
-  const fetchProducts = () => {
-    fetch('/products/')
-      .then(res => res.json())
+const fetchProducts = () => {
+    const token = localStorage.getItem('token');
+    
+    // If no token exists, don't even bother fetching
+    if (!token) {
+      setView('login');
+      return;
+    }
+
+    setLoading(true);
+
+    fetch('/products/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // Passing the token here
+      }
+    })
+      .then(res => {
+        // If the backend rejects the token, kick user back to login
+        if (res.status === 401 || res.status === 403) {
+          handleLogout();
+          throw new Error("Session expired. Please login again.");
+        }
+        if (!res.ok) throw new Error("Could not load products.");
+        return res.json();
+      })
       .then(data => {
         setProducts(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch(err => setError(err.message));
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
   };
 
   // --- AUTH HANDLERS ---
@@ -84,9 +111,15 @@ const handleLogin = async (e) => {
 const handleCreateProduct = async (e) => {
   e.preventDefault();
   const token = localStorage.getItem('token');
-  const storedSellerId = localStorage.getItem('sellerId'); // Get the ID from storage
+  const storedSellerId = localStorage.getItem('sellerId');
 
   try {
+    // Basic frontend validation to match your backend check
+    if (!productData.productId || !productData.name || !productData.description || 
+        !productData.brand || !productData.family || !productData.releaseDate) {
+      throw new Error("Please fill in all required fields (Product ID, Name, Description, Brand, Family, and Release Date).");
+    }
+
     const res = await fetch('/products/', {
       method: 'POST',
       headers: {
@@ -94,24 +127,32 @@ const handleCreateProduct = async (e) => {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        ...productData,
-        sellerId: storedSellerId, // Ensure the backend gets the ID of the logged-in user
-        cost: parseFloat(productData.cost),
+        productId: productData.productId,
+        sellerId: storedSellerId, // Using the ID from login
+        name: productData.name,
+        description: productData.description,
+        cost: parseFloat(productData.cost || 0),
+        brand: productData.brand,
+        family: productData.family,
+        releaseDate: new Date(productData.releaseDate).toISOString(), // Ensure ISO format
+        onSpecial: Boolean(productData.onSpecial),
         discount: parseFloat(productData.discount || 0),
         productTier: parseInt(productData.productTier || 1),
+        nextProduct: productData.nextProduct || ""
       })
     });
     
-    if (res.status === 403) throw new Error("Session expired or unauthorized. Please login again.");
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || 'Failed to create product');
-    }
+    if (res.status === 403) throw new Error("Session expired. Please login again.");
+    
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create product');
 
-    alert('Product Added!');
+    alert('Product Added successfully!');
     setShowProductForm(false);
-    fetchProducts();
-  } catch (err) { alert(err.message); }
+    fetchProducts(); // Refresh the list
+  } catch (err) { 
+    alert(err.message); 
+  }
 };
 
   // --- UI RENDERING ---
