@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, getProfile, deleteProfile } from '../controllers/buyerController.js';
+import { register, login, getProfile, deleteProfile, updateProfile } from '../controllers/buyerController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -96,5 +96,24 @@ router.get('/:id', authMiddleware, getProfile);
  *       404: { description: Buyer not found }
  */
 router.delete('/:id', authMiddleware, deleteProfile);
+
+/**
+ * @swagger
+ * /buyers/{id}:
+ *   put:
+ *     summary: Update a buyer's profile
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Updated buyer profile }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.put('/:id', authMiddleware, updateProfile);
 
 export default router;
