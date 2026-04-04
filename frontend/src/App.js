@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import './App.css';
 
 function App() {
@@ -6,7 +6,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // NAVIGATION STATE: 'login', 'register', or 'dashboard'
   const [view, setView] = useState(localStorage.getItem('token') ? 'dashboard' : 'login');
   const [showProductForm, setShowProductForm] = useState(false);
 
@@ -17,36 +16,36 @@ function App() {
     postalCode: '', countryCode: '', companyId: '', legalEntityId: '', 
     taxSchemeId: '', contactName: '', contactPhone: '', contactEmail: ''
   });
+
+  // Updated productData to include 'family'
   const [productData, setProductData] = useState({
-    productId: '', seller: '', name: '', description: '',
+    productId: '', sellerId: '', name: '', description: '',
     cost: 0, brand: '', family: '', releaseDate: '',
     onSpecial: false, discount: 0, productTier: 1, nextProduct: ''
   });
 
-  useEffect(() => {
-    if (view === 'dashboard') fetchProducts();
-  }, [view]);
+  const handleLogout = useCallback(() => {
+    localStorage.clear();
+    setView('login');
+  }, []);
 
-const fetchProducts = () => {
+  // 1. Wrap fetchProducts in useCallback to fix the Build Error
+  const fetchProducts = useCallback(() => {
     const token = localStorage.getItem('token');
-    
-    // If no token exists, don't even bother fetching
     if (!token) {
       setView('login');
       return;
     }
 
     setLoading(true);
-
     fetch('/products/', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Passing the token here
+        'Authorization': `Bearer ${token}`
       }
     })
       .then(res => {
-        // If the backend rejects the token, kick user back to login
         if (res.status === 401 || res.status === 403) {
           handleLogout();
           throw new Error("Session expired. Please login again.");
@@ -62,26 +61,32 @@ const fetchProducts = () => {
         setError(err.message);
         setLoading(false);
       });
-  };
+  }, [handleLogout]); // Dependencies for fetchProducts
+
+  // 2. Add fetchProducts to the dependency array
+  useEffect(() => {
+    if (view === 'dashboard') {
+      fetchProducts();
+    }
+  }, [view, fetchProducts]);
 
   // --- AUTH HANDLERS ---
-const handleLogin = async (e) => {
-  e.preventDefault();
-  try {
-    const res = await fetch('/sellers/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(loginData)
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed');
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/sellers/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginData)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('sellerId', data.sellerId); 
-    
-    setView('dashboard');
-  } catch (err) { alert(err.message); }
-};
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('sellerId', data.sellerId); 
+      setView('dashboard');
+    } catch (err) { alert(err.message); }
+  };
 
   const handleRegisterSeller = async (e) => {
     e.preventDefault();
@@ -102,62 +107,45 @@ const handleLogin = async (e) => {
     } catch (err) { alert(err.message); }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    setView('login');
+  // --- PRODUCT HANDLER ---
+  const handleCreateProduct = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    const storedSellerId = localStorage.getItem('sellerId');
+
+    try {
+      // Validation check matching your backend requirements
+      if (!productData.productId || !productData.name || !productData.description || 
+          !productData.brand || !productData.family || !productData.releaseDate) {
+        throw new Error("Missing required fields: ID, Name, Description, Brand, Family, or Date.");
+      }
+
+      const res = await fetch('/products/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...productData,
+          sellerId: storedSellerId,
+          cost: parseFloat(productData.cost || 0),
+          discount: parseFloat(productData.discount || 0),
+          productTier: parseInt(productData.productTier || 1),
+          releaseDate: new Date(productData.releaseDate).toISOString()
+        })
+      });
+      
+      if (res.status === 403) throw new Error("Unauthorized. Please login again.");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create product');
+
+      alert('Product Added!');
+      setShowProductForm(false);
+      fetchProducts();
+    } catch (err) { alert(err.message); }
   };
 
-  // --- PRODUCT HANDLER ---
-const handleCreateProduct = async (e) => {
-  e.preventDefault();
-  const token = localStorage.getItem('token');
-  const storedSellerId = localStorage.getItem('sellerId');
-
-  try {
-    // Basic frontend validation to match your backend check
-    if (!productData.productId || !productData.name || !productData.description || 
-        !productData.brand || !productData.family || !productData.releaseDate) {
-      throw new Error("Please fill in all required fields (Product ID, Name, Description, Brand, Family, and Release Date).");
-    }
-
-    const res = await fetch('/products/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        productId: productData.productId,
-        sellerId: storedSellerId, // Using the ID from login
-        name: productData.name,
-        description: productData.description,
-        cost: parseFloat(productData.cost || 0),
-        brand: productData.brand,
-        family: productData.family,
-        releaseDate: new Date(productData.releaseDate).toISOString(), // Ensure ISO format
-        onSpecial: Boolean(productData.onSpecial),
-        discount: parseFloat(productData.discount || 0),
-        productTier: parseInt(productData.productTier || 1),
-        nextProduct: productData.nextProduct || ""
-      })
-    });
-    
-    if (res.status === 403) throw new Error("Session expired. Please login again.");
-    
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to create product');
-
-    alert('Product Added successfully!');
-    setShowProductForm(false);
-    fetchProducts(); // Refresh the list
-  } catch (err) { 
-    alert(err.message); 
-  }
-};
-
-  // --- UI RENDERING ---
-  
-  // 1. LOGIN VIEW
   if (view === 'login') {
     return (
       <div className="auth-container">
@@ -172,7 +160,6 @@ const handleCreateProduct = async (e) => {
     );
   }
 
-  // 2. REGISTER VIEW
   if (view === 'register') {
     return (
       <div className="auth-container">
@@ -197,8 +184,6 @@ const handleCreateProduct = async (e) => {
     );
   }
 
-  // 3. DASHBOARD VIEW (Logged In)
-// 3. DASHBOARD VIEW (Logged In)
   return (
     <div className="store-container">
       <header className="store-header">
@@ -211,20 +196,21 @@ const handleCreateProduct = async (e) => {
         </div>
       </header>
 
-      {/* --- ADDED LOADING AND ERROR UI --- */}
       {loading && <div className="loading-state">Updating inventory...</div>}
       {error && <div className="error-banner">Error: {error}</div>}
-      {/* ---------------------------------- */}
 
       {showProductForm && (
         <form className="product-form-overlay" onSubmit={handleCreateProduct}>
           <h3>List New Item</h3>
           <div className="form-grid">
             <input name="productId" placeholder="Product ID" onChange={e => setProductData({...productData, productId: e.target.value})} required />
-            <input name="seller" placeholder="Seller ID" onChange={e => setProductData({...productData, seller: e.target.value})} required />
             <input name="name" placeholder="Name" onChange={e => setProductData({...productData, name: e.target.value})} required />
-            <input name="cost" type="number" placeholder="Cost" onChange={e => setProductData({...productData, cost: e.target.value})} required />
             <input name="brand" placeholder="Brand" onChange={e => setProductData({...productData, brand: e.target.value})} required />
+            
+            {/* Added missing Family field */}
+            <input name="family" placeholder="Family" onChange={e => setProductData({...productData, family: e.target.value})} required />
+            
+            <input name="cost" type="number" step="0.01" placeholder="Cost" onChange={e => setProductData({...productData, cost: e.target.value})} required />
             <input name="releaseDate" type="date" onChange={e => setProductData({...productData, releaseDate: e.target.value})} required />
           </div>
           <textarea placeholder="Description" onChange={e => setProductData({...productData, description: e.target.value})} required />
@@ -237,7 +223,7 @@ const handleCreateProduct = async (e) => {
         {products.map(p => (
           <div key={p.productId || p.id} className="product-card">
             <h3>{p.name}</h3>
-            <p className="price">${p.cost || p.price}</p>
+            <p className="price">${p.cost ?? p.price ?? 0}</p>
             <p>{p.description}</p>
           </div>
         ))}
