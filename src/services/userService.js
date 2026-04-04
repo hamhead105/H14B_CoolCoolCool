@@ -52,6 +52,18 @@ export async function loginBuyer({ email, password }) {
   return { token, buyerId: buyer.buyerId };
 }
 
+export async function getBuyerById(buyerId) {
+  return prisma.buyer.findUnique({
+    where: { buyerId },
+    select: {
+      buyerId: true, name: true, email: true, street: true,
+      city: true, postalCode: true, countryCode: true,
+      companyId: true, taxSchemeId: true, contactPhone: true,
+      loyaltyPoints: true, createdAt: true
+    }
+  });
+}
+
 // SELLER
 
 export async function registerSeller(data) {
@@ -100,4 +112,17 @@ export async function loginSeller({ email, password }) {
   );
 
   return { token, sellerId: seller.sellerId };
+}
+
+export async function getSellerById(sellerId) {
+  return prisma.seller.findUnique({
+    where: { sellerId },
+    select: {
+      sellerId: true, name: true, email: true, street: true,
+      city: true, postalCode: true, countryCode: true,
+      companyId: true, legalEntityId: true, taxSchemeId: true,
+      contactName: true, contactPhone: true, contactEmail: true,
+      createdAt: true
+    }
+  });
 }
