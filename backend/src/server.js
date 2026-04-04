@@ -27,12 +27,10 @@ app.use((err, req, res, next) => {
   next();
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`Server running locally on port ${port}`);
-  });
-}
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
+
 // stop hanging
 // if (require.main === module) {
 //     app.listen(port, () => {
