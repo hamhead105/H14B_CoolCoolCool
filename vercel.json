@@ -13,12 +13,16 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/sellers/(.*)",
+      "destination": "backend/src/server.js"
+    },
+    {
+      "source": "/products/(.*)",
       "destination": "backend/src/server.js"
     },
     {
       "source": "/(.*)",
-      "destination": "frontend/$1"
+      "destination": "/index.html"
     }
   ]
 }
