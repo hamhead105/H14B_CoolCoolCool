@@ -13,12 +13,20 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "backend/src/server.js"
+      "source": "/static/(.*)",
+      "destination": "/frontend/static/$1"
+    },
+    {
+      "source": "/(.*\\..*)",
+      "destination": "/frontend/$1"
+    },
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
     },
     {
       "source": "/(.*)",
-      "destination": "frontend/$1"
+      "destination": "backend/src/server.js"
     }
   ]
 }
