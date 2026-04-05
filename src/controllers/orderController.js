@@ -181,7 +181,8 @@ export async function listOrders(req, res) {
       orderId: o.orderId,
       status: o.status,
       totalCost: o.totalCost,
-      createdAt: o.createdAt
+      createdAt: o.createdAt,
+      inputData: o.inputData
     })));
   } catch (error) {
     console.error(error);
