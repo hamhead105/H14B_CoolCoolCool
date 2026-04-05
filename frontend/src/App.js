@@ -28,14 +28,14 @@ function ProductDetail({ productId, onBack }) {
   if (loading) return (
     <div className="detail-state">
       <div className="detail-spinner" />
-      <p>Loading product…</p>
+      <p>Loading product...</p>
     </div>
   );
 
   if (error) return (
     <div className="detail-state">
       <p className="detail-error">{error}</p>
-      <button className="back-btn" onClick={onBack}>← Back</button>
+      <button className="back-btn" onClick={onBack}>Back</button>
     </div>
   );
 
@@ -49,16 +49,15 @@ function ProductDetail({ productId, onBack }) {
     ? new Date(product.releaseDate).toLocaleDateString('en-AU', {
         year: 'numeric', month: 'long', day: 'numeric'
       })
-    : '—';
+    : '-';
 
   return (
     <div className="detail-page">
       <div className="detail-topbar">
-        <button className="back-btn" onClick={onBack}>← Back</button>
+        <button className="back-btn" onClick={onBack}>Back</button>
       </div>
 
       <div className="detail-layout">
-        {/* Left: identity */}
         <div className="detail-identity">
           <div className="detail-badges">
             {product.family && <span className="badge badge-family">{product.family}</span>}
@@ -86,23 +85,20 @@ function ProductDetail({ productId, onBack }) {
           <p className="detail-description">{product.description || 'No description provided.'}</p>
         </div>
 
-        {/* Right: metadata */}
         <div className="detail-meta-panel">
           <h2 className="detail-meta-heading">Details</h2>
           <dl className="detail-meta-list">
             <div className="meta-row">
               <dt>Tier</dt>
-              <dd>
-                <span className="tier-pip">{product.productTier || '—'}</span>
-              </dd>
+              <dd><span className="tier-pip">{product.productTier || '-'}</span></dd>
             </div>
             <div className="meta-row">
               <dt>Brand</dt>
-              <dd>{product.brand || '—'}</dd>
+              <dd>{product.brand || '-'}</dd>
             </div>
             <div className="meta-row">
               <dt>Family</dt>
-              <dd>{product.family || '—'}</dd>
+              <dd>{product.family || '-'}</dd>
             </div>
             <div className="meta-row">
               <dt>Released</dt>
@@ -110,7 +106,7 @@ function ProductDetail({ productId, onBack }) {
             </div>
             <div className="meta-row">
               <dt>Seller ID</dt>
-              <dd>{product.sellerId || '—'}</dd>
+              <dd>{product.sellerId || '-'}</dd>
             </div>
             {product.nextProduct && (
               <div className="meta-row">
@@ -129,16 +125,13 @@ function ProductDetail({ productId, onBack }) {
 function App() {
   const [products, setProducts] = useState([]);
 
-  // High-level navigation: 'login', 'register', 'dashboard', or 'product'
   const [view, setView] = useState(() => {
     if (!localStorage.getItem('token')) return 'login';
-    // Restore deep-link on page load
     const match = window.location.pathname.match(/^\/products\/(.+)$/);
     if (match) return 'product';
     return 'dashboard';
   });
 
-  // Track which product is open
   const [activeProductId, setActiveProductId] = useState(() => {
     const match = window.location.pathname.match(/^\/products\/(.+)$/);
     return match ? match[1] : null;
@@ -184,9 +177,7 @@ function App() {
         }
         return res.json();
       })
-      .then(data => {
-        setProducts(Array.isArray(data) ? data : []);
-      })
+      .then(data => { setProducts(Array.isArray(data) ? data : []); })
       .catch(err => { console.error(err.message); });
   }, [handleLogout]);
 
@@ -194,7 +185,6 @@ function App() {
     if (view === 'dashboard') fetchProducts();
   }, [view, fetchProducts]);
 
-  // Sync browser back/forward buttons
   useEffect(() => {
     const onPop = () => {
       const match = window.location.pathname.match(/^\/products\/(.+)$/);
@@ -210,7 +200,6 @@ function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, []);
 
-  // --- NAVIGATE TO PRODUCT ---
   const openProduct = useCallback((productId) => {
     window.history.pushState({}, '', `/products/${productId}`);
     setActiveProductId(productId);
@@ -234,6 +223,40 @@ function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('sellerId', data.sellerId);
+      setView('dashboard');
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/sellers/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: regData.name,
+          email: regData.email,
+          password: regData.password,
+          address: {
+            street: regData.street,
+            city: regData.city,
+            postalCode: regData.postalCode,
+            countryCode: regData.countryCode,
+          },
+          companyId: regData.companyId,
+          legalEntityId: regData.legalEntityId,
+          taxSchemeId: regData.taxSchemeId,
+          contact: {
+            name: regData.contactName,
+            phone: regData.contactPhone,
+            email: regData.contactEmail,
+          }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
       localStorage.setItem('token', data.token);
       localStorage.setItem('sellerId', data.sellerId);
       setView('dashboard');
@@ -281,10 +304,140 @@ function App() {
     <div className="auth-container">
       <form className="auth-card" onSubmit={handleLogin}>
         <h2>HB14 Login</h2>
-        <input type="email" placeholder="Email" onChange={e => setLoginData({...loginData, email: e.target.value})} required />
-        <input type="password" placeholder="Password" onChange={e => setLoginData({...loginData, password: e.target.value})} required />
+        <input
+          type="email"
+          placeholder="Email"
+          onChange={e => setLoginData({...loginData, email: e.target.value})}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          onChange={e => setLoginData({...loginData, password: e.target.value})}
+          required
+        />
         <button type="submit" className="primary-btn">Login</button>
         <p>No account? <span onClick={() => setView('register')}>Register here</span></p>
+      </form>
+    </div>
+  );
+
+  if (view === 'register') return (
+    <div className="auth-container auth-container--wide">
+      <form className="auth-card auth-card--register" onSubmit={handleRegister}>
+        <h2>Create Account</h2>
+        <p className="reg-subtitle">Set up your HB14 seller profile</p>
+
+        <fieldset className="reg-fieldset">
+          <legend>Account</legend>
+          <div className="reg-grid">
+            <input
+              placeholder="Full name"
+              value={regData.name}
+              onChange={e => setRegData({...regData, name: e.target.value})}
+              required
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={regData.email}
+              onChange={e => setRegData({...regData, email: e.target.value})}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={regData.password}
+              onChange={e => setRegData({...regData, password: e.target.value})}
+              className="reg-full"
+              required
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="reg-fieldset">
+          <legend>Address</legend>
+          <div className="reg-grid">
+            <input
+              placeholder="Street"
+              value={regData.street}
+              onChange={e => setRegData({...regData, street: e.target.value})}
+              className="reg-full"
+              required
+            />
+            <input
+              placeholder="City"
+              value={regData.city}
+              onChange={e => setRegData({...regData, city: e.target.value})}
+              required
+            />
+            <input
+              placeholder="Postal code"
+              value={regData.postalCode}
+              onChange={e => setRegData({...regData, postalCode: e.target.value})}
+              required
+            />
+            <input
+              placeholder="Country code (e.g. AU)"
+              value={regData.countryCode}
+              onChange={e => setRegData({...regData, countryCode: e.target.value})}
+              maxLength={2}
+              required
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="reg-fieldset">
+          <legend>Business</legend>
+          <div className="reg-grid">
+            <input
+              placeholder="Company ID"
+              value={regData.companyId}
+              onChange={e => setRegData({...regData, companyId: e.target.value})}
+              required
+            />
+            <input
+              placeholder="Legal entity ID"
+              value={regData.legalEntityId}
+              onChange={e => setRegData({...regData, legalEntityId: e.target.value})}
+              required
+            />
+            <input
+              placeholder="Tax scheme ID"
+              value={regData.taxSchemeId}
+              onChange={e => setRegData({...regData, taxSchemeId: e.target.value})}
+              required
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="reg-fieldset">
+          <legend>Contact person</legend>
+          <div className="reg-grid">
+            <input
+              placeholder="Contact name"
+              value={regData.contactName}
+              onChange={e => setRegData({...regData, contactName: e.target.value})}
+              required
+            />
+            <input
+              placeholder="Contact phone"
+              value={regData.contactPhone}
+              onChange={e => setRegData({...regData, contactPhone: e.target.value})}
+              required
+            />
+            <input
+              type="email"
+              placeholder="Contact email"
+              value={regData.contactEmail}
+              onChange={e => setRegData({...regData, contactEmail: e.target.value})}
+              required
+            />
+          </div>
+        </fieldset>
+
+        <button type="submit" className="primary-btn">Create account</button>
+        <p>Already have an account? <span onClick={() => setView('login')}>Login here</span></p>
       </form>
     </div>
   );
