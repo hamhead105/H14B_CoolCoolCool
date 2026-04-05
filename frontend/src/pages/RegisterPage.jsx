@@ -11,23 +11,28 @@ const BUYER_FIELDS = [
   { label: 'City', key: 'city', placeholder: 'Sydney' },
   { label: 'Postal Code', key: 'postalCode', placeholder: '2000' },
   { label: 'Country Code', key: 'countryCode', placeholder: 'AU' },
+  { label: 'Company ID (ABN)', key: 'companyId', placeholder: '51 824 753 556' },
+  { label: 'Legal Entity ID', key: 'legalEntityId', placeholder: 'Optional' },
+  { label: 'Tax Scheme ID', key: 'taxSchemeId', placeholder: 'GST' },
+  { label: 'Contact Phone', key: 'contactPhone', placeholder: '0400 000 000' },
 ];
 
 const SELLER_FIELDS = [
   { label: 'Business Name', key: 'name', placeholder: 'Wholesale Co Pty Ltd' },
-  { label: 'Email', key: 'email', type: 'email' },
-  { label: 'Password', key: 'password', type: 'password' },
-  { label: 'Street Address', key: 'street' },
-  { label: 'City', key: 'city' },
-  { label: 'Postal Code', key: 'postalCode' },
+  { label: 'Email', key: 'email', type: 'email', placeholder: 'sales@wholesale.com' },
+  { label: 'Password', key: 'password', type: 'password', placeholder: '••••••••' },
+  { label: 'Street Address', key: 'street', placeholder: '456 Trade St' },
+  { label: 'City', key: 'city', placeholder: 'Melbourne' },
+  { label: 'Postal Code', key: 'postalCode', placeholder: '3000' },
   { label: 'Country Code', key: 'countryCode', placeholder: 'AU' },
-  { label: 'Company ID (ABN)', key: 'companyId' },
-  { label: 'Legal Entity ID', key: 'legalEntityId' },
+  { label: 'Company ID (ABN)', key: 'companyId', placeholder: '12 345 678 910' },
+  { label: 'Legal Entity ID', key: 'legalEntityId', placeholder: 'ASIC-123' },
   { label: 'Tax Scheme ID', key: 'taxSchemeId', placeholder: 'GST' },
-  { label: 'Contact Name', key: 'contactName' },
-  { label: 'Contact Phone', key: 'contactPhone' },
-  { label: 'Contact Email', key: 'contactEmail' },
+  { label: 'Contact Name', key: 'contactName', placeholder: 'Account Manager' },
+  { label: 'Contact Phone', key: 'contactPhone', placeholder: '03 9000 0000' },
+  { label: 'Contact Email', key: 'contactEmail', placeholder: 'contact@wholesale.com' },
 ];
+
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -54,7 +59,7 @@ export default function RegisterPage() {
           contactName: form.contactName || form.name,
           contactPhone: form.phone || "0400000000",
           contactEmail: form.contactEmail || form.email,
-          name: form.name || form.businessName 
+          name: form.name || form.name 
         };
       }
 
@@ -63,9 +68,23 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+      Object.keys(data).forEach(key => {
+        if (typeof data[key] !== 'object') {
+          localStorage.setItem(key, data[key]);
+        }
+      });
+
+      if (tab === 'buyer') {
+        localStorage.setItem('buyerId', data.buyerId);
+      } else {
+        localStorage.setItem('sellerId', data.sellerId);
+      }
+      navigate(tab === 'buyer' ? '/buyer/dashboard' : '/seller/dashboard');
+  
 
     } catch (e) {
       setError(e.message);

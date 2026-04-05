@@ -22,17 +22,28 @@ export default function SellerDashboard() {
   const sellerId = localStorage.getItem('sellerId');
   const [seller, setSeller] = useState(null);
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]); 
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token || !sellerId) { navigate('/login'); return; }
+    
     Promise.all([
-      fetch(`${API_BASE}/sellers/${sellerId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => { if (r.status === 401) { navigate('/login'); throw new Error(); } return r.json(); }),
+      fetch(`${API_BASE}/sellers/${sellerId}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
       fetch(`${API_BASE}/products/`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    ]).then(([s, p]) => {
+      fetch(`${API_BASE}/orders/`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()), // Add this
+    ]).then(([s, p, o]) => {
       setSeller(s);
       setProducts(Array.isArray(p) ? p : []);
+      
+      const myOrders = Array.isArray(o) ? o.filter(order => {
+        const items = order.inputData?.items || [];
+        return items.some(item => item.sellerId == sellerId);
+      }) : [];
+      setOrders(myOrders);
+      
     }).catch(() => {}).finally(() => setLoading(false));
   }, [sellerId, navigate]);
 
@@ -74,6 +85,7 @@ export default function SellerDashboard() {
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '16px', marginBottom: '28px' }}>
             <StatCard label="Total Products" value={myProducts.length} sub="Listed in catalog" color="#2563eb" icon="📦" />
+            <StatCard label="Active Orders" value={orders.length} sub="Incoming sales" color="#10b981" icon="💰" />
             <StatCard label="On Special" value={onSpecial.length} sub="Active discounts" color="#f59e0b" icon="🏷️" />
             <StatCard label="Categories" value={families.length} sub="Product families" color="#10b981" icon="🗂️" />
           </div>
@@ -113,7 +125,7 @@ export default function SellerDashboard() {
               {seller ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {[
-                    { label: 'Business', value: seller.businessName },
+                    { label: 'Business', value: seller.name },
                     { label: 'Email', value: seller.email },
                     { label: 'Phone', value: seller.phone || '—' },
                     { label: 'Address', value: seller.address || '—' },

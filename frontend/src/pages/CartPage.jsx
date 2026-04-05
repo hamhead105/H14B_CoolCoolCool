@@ -15,52 +15,6 @@ function getCart() {
 }
 function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); }
 
-function generateUBL(cart, buyer) {
-  const total = cart.reduce((sum, item) => {
-    const price = item.onSpecial ? item.cost * (1 - item.discount) : item.cost;
-    return sum + price * item.qty;
-  }, 0);
-  const lines = cart.map((item, idx) => {
-    const price = item.onSpecial ? (item.cost * (1 - item.discount)).toFixed(2) : Number(item.cost).toFixed(2);
-    return `
-    <cac:OrderLine>
-      <cbc:LineStatusCode>NoStatus</cbc:LineStatusCode>
-      <cac:LineItem>
-        <cbc:ID>${idx + 1}</cbc:ID>
-        <cbc:Quantity unitCode="EA">${item.qty}</cbc:Quantity>
-        <cbc:LineExtensionAmount currencyID="AUD">${(price * item.qty).toFixed(2)}</cbc:LineExtensionAmount>
-        <cac:Price>
-          <cbc:PriceAmount currencyID="AUD">${price}</cbc:PriceAmount>
-        </cac:Price>
-        <cac:Item>
-          <cbc:Name>${item.name}</cbc:Name>
-          <cac:SellersItemIdentification>
-            <cbc:ID>${item.productId}</cbc:ID>
-          </cac:SellersItemIdentification>
-        </cac:Item>
-      </cac:LineItem>
-    </cac:OrderLine>`;
-  }).join('');
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<ubl:Order xmlns:ubl="urn:oasis:names:specification:ubl:schema:xsd:Order-2"
-  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
-  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2">
-  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
-  <cbc:ID>ORD-${Date.now()}</cbc:ID>
-  <cbc:IssueDate>${new Date().toISOString().split('T')[0]}</cbc:IssueDate>
-  <cbc:DocumentCurrencyCode>AUD</cbc:DocumentCurrencyCode>
-  <cac:BuyerCustomerParty>
-    <cac:Party>
-      <cac:PartyName><cbc:Name>${buyer?.businessName || 'Buyer'}</cbc:Name></cac:PartyName>
-    </cac:Party>
-  </cac:BuyerCustomerParty>
-  <cac:AnticipatedMonetaryTotal>
-    <cbc:PayableAmount currencyID="AUD">${total.toFixed(2)}</cbc:PayableAmount>
-  </cac:AnticipatedMonetaryTotal>${lines}
-</ubl:Order>`;
-}
-
 export default function CartPage() {
   const navigate = useNavigate();
   const [cart, setCartState] = useState(getCart());
@@ -81,18 +35,101 @@ export default function CartPage() {
   };
 
   const total = cart.reduce((sum, item) => {
-    const price = item.onSpecial ? item.cost * (1 - item.discount) : item.cost;
-    return sum + price * item.qty;
+    const cost = Number(item.cost || 0);
+    const discount = Number(item.discount || 0);
+    const qty = Number(item.qty || 1);
+    
+    const price = item.onSpecial ? cost * (1 - discount) : cost;
+    return sum + price * qty;
   }, 0);
 
-  const handleOrder = () => {
-    const buyer = { businessName: 'Buyer Co' }; // In full app, load from API
-    const xml = generateUBL(cart, buyer);
-    setUblXml(xml);
-    setOrderPlaced(true);
-    saveCart([]);
-    setCartState([]);
+  const handleOrder = async () => {
+    const token = localStorage.getItem('token');
+    const buyerData = {
+      name: localStorage.getItem('name'),
+      email: localStorage.getItem('email'),
+      street: localStorage.getItem('street'),
+      city: localStorage.getItem('city'),
+      postalCode: localStorage.getItem('postalCode'),
+      countryCode: localStorage.getItem('countryCode'),
+      companyId: localStorage.getItem('companyId'),
+      taxSchemeId: localStorage.getItem('taxSchemeId'),
+      legalEntityId: localStorage.getItem('legalEntityId'),
+      contactName: localStorage.getItem('contactName'),
+      contactPhone: localStorage.getItem('contactPhone'),
+      contactEmail: localStorage.getItem('contactEmail')
+    };
+
+    const orderPayload = {
+    order: { 
+      id: `ORD-${Date.now()}`,
+      currencyID: "AUD",
+      issueDate: new Date().toISOString().split('T')[0],
+      note: "Standard B2B Order"
+    },
+    buyer: buyerData,
+
+    seller: { 
+      name: "Multiple Sellers", 
+      street: "See Items", 
+      city: "N/A", 
+      postalCode: "0000", 
+      countryCode: "AU",
+      companyId: "N/A",
+      taxSchemeId: "GST",
+      legalEntityId: "N/A",
+      contactName: "N/A",
+      contactPhone: "N/A",
+      contactEmail: "N/A"
+    },
+    delivery: {
+      street: buyerData.street,
+      city: buyerData.city,
+      postalCode: buyerData.postalCode,
+      countryCode: buyerData.countryCode,
+      requestedStartDate: new Date().toISOString().split('T')[0],
+      requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] // +7 days
+    },
+    tax: { 
+      taxPercent: 10, 
+      taxTypeCode: "GST" 
+    },
+    items: cart.map((item, idx) => ({
+      id: (idx + 1).toString(),
+      quantity: Number(item.qty),
+      unitCode: "EA",
+      priceAmount: item.onSpecial ? Number(item.cost * (1 - item.discount)) : Number(item.cost),
+      product: {
+        name: item.name,
+        description: item.description || "",
+        sellersItemId: item.productId
+      },
+      sellerId: Number(item.sellerId)
+    }))
   };
+
+  try {
+    const res = await fetch(`${API_BASE}/orders`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(orderPayload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Order failed');
+
+    setUblXml(data.ublDocument);
+    setOrderPlaced(true);
+    localStorage.removeItem('cart');
+    setCartState([]);
+  } catch (err) {
+    alert(`Order Error: ${err.message}`);
+  }
+};
+
 
   const downloadUBL = () => {
     const blob = new Blob([ublXml], { type: 'application/xml' });

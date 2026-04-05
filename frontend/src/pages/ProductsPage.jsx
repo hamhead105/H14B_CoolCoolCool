@@ -405,7 +405,12 @@ export default function ProductsPage() {
                 </span>
               )}
             </button>
-            <button onClick={() => { localStorage.clear(); navigate('/login'); }} title="Logout"
+            <button onClick={() => { 
+              localStorage.clear(); 
+              // This forces a full browser refresh so all React states reset
+              window.location.href = '/login'; 
+                  }} 
+              title="Logout"
               style={{ width: '36px', height: '36px', background: '#f1f5f9', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

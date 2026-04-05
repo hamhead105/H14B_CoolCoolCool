@@ -30,17 +30,21 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const sellerId = localStorage.getItem('sellerId');
+    const currentSellerId = localStorage.getItem('sellerId');
     if (!token) { navigate('/login'); return; }
 
-    // Attempt to fetch orders — endpoint may not exist yet
-    fetch(`${API_BASE}/orders?sellerId=${sellerId}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => {
-        if (r.status === 401) { navigate('/login'); throw new Error('Unauthorized'); }
-        if (!r.ok) throw new Error('Orders endpoint not available yet');
-        return r.json();
+    fetch(`${API_BASE}/orders`, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    })
+      .then(r => r.json())
+      .then(data => {
+        // Manual filter: Only show orders where at least one item belongs to this seller
+        const myOrders = data.filter(order => {
+          const items = order.inputData?.items || [];
+          return items.some(item => item.sellerId == currentSellerId);
+        });
+        setOrders(myOrders);
       })
-      .then(data => setOrders(Array.isArray(data) ? data : []))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [navigate]);
@@ -136,7 +140,7 @@ export default function OrdersPage() {
                       <td style={{ padding: '13px 16px', fontWeight: '600', color: '#0f172a' }}>{order.orderId}</td>
                       <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.buyerName || order.buyerId}</td>
                       <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.items?.length ?? 0}</td>
-                      <td style={{ padding: '13px 16px', fontWeight: '700', color: '#0f172a' }}>${Number(order.total || 0).toFixed(2)}</td>
+                      <td style={{ padding: '13px 16px', fontWeight: '700', color: '#0f172a' }}>${Number(order.totalCost || 0).toFixed(2)}</td>
                       <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-AU') : '—'}</td>
                       <td style={{ padding: '13px 16px' }}><StatusBadge status={order.status || 'pending'} /></td>
                       <td style={{ padding: '13px 16px' }}>

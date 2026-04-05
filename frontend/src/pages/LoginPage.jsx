@@ -20,11 +20,34 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', tab);
-      localStorage.setItem(tab === 'buyer' ? 'buyerId' : 'sellerId', data[tab === 'buyer' ? 'buyerId' : 'sellerId']);
+
+      localStorage.setItem('name', data.name);
+      localStorage.setItem('email', data.email);
+      localStorage.setItem('street', data.street);
+      localStorage.setItem('city', data.city);
+      localStorage.setItem('postalCode', data.postalCode);
+      localStorage.setItem('countryCode', data.countryCode);
+      localStorage.setItem('companyId', data.companyId);
+      localStorage.setItem('taxSchemeId', data.taxSchemeId);
+      localStorage.setItem('contactName', data.contactName || data.name);
+      localStorage.setItem('contactPhone', data.contactPhone);
+      localStorage.setItem('contactEmail', data.contactEmail || data.email);
+
+      if (tab === 'buyer') {
+        localStorage.setItem('buyerId', data.buyerId);
+        localStorage.setItem('legalEntityId', data.legalEntityId || ''); 
+      } else {
+        localStorage.setItem('sellerId', data.sellerId);
+        localStorage.setItem('legalEntityId', data.legalEntityId);
+      }
+
+
       navigate(tab === 'buyer' ? '/buyer/dashboard' : '/seller/dashboard');
     } catch (e) {
       setError(e.message);
