@@ -4,19 +4,29 @@ import { useNavigate } from 'react-router-dom';
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 
 const BUYER_FIELDS = [
-  { label: 'Business Name', key: 'businessName', placeholder: 'Acme Retail Pty Ltd' },
-  { label: 'Email address', key: 'email', type: 'email', placeholder: 'you@company.com' },
+  { label: 'Full Name', key: 'name', placeholder: 'John Citizen' },
+  { label: 'Email Address', key: 'email', type: 'email', placeholder: 'john@example.com' },
   { label: 'Password', key: 'password', type: 'password', placeholder: '••••••••' },
-  { label: 'Phone', key: 'phone', placeholder: '+61 4xx xxx xxx' },
-  { label: 'Address', key: 'address', placeholder: '123 Main St, Sydney NSW 2000' },
+  { label: 'Street', key: 'street', placeholder: '123 Main St' },
+  { label: 'City', key: 'city', placeholder: 'Sydney' },
+  { label: 'Postal Code', key: 'postalCode', placeholder: '2000' },
+  { label: 'Country Code', key: 'countryCode', placeholder: 'AU' },
 ];
 
 const SELLER_FIELDS = [
-  { label: 'Business Name', key: 'businessName', placeholder: 'Wholesale Co Pty Ltd' },
-  { label: 'Email address', key: 'email', type: 'email', placeholder: 'you@company.com' },
-  { label: 'Password', key: 'password', type: 'password', placeholder: '••••••••' },
-  { label: 'Phone', key: 'phone', placeholder: '+61 4xx xxx xxx' },
-  { label: 'Address', key: 'address', placeholder: '456 Trade St, Melbourne VIC 3000' },
+  { label: 'Business Name', key: 'name', placeholder: 'Wholesale Co Pty Ltd' },
+  { label: 'Email', key: 'email', type: 'email' },
+  { label: 'Password', key: 'password', type: 'password' },
+  { label: 'Street Address', key: 'street' },
+  { label: 'City', key: 'city' },
+  { label: 'Postal Code', key: 'postalCode' },
+  { label: 'Country Code', key: 'countryCode', placeholder: 'AU' },
+  { label: 'Company ID (ABN)', key: 'companyId' },
+  { label: 'Legal Entity ID', key: 'legalEntityId' },
+  { label: 'Tax Scheme ID', key: 'taxSchemeId', placeholder: 'GST' },
+  { label: 'Contact Name', key: 'contactName' },
+  { label: 'Contact Phone', key: 'contactPhone' },
+  { label: 'Contact Email', key: 'contactEmail' },
 ];
 
 export default function RegisterPage() {
@@ -30,29 +40,40 @@ export default function RegisterPage() {
 
   const handleSubmit = async () => {
     setError('');
-    const requiredKeys = fields.map(f => f.key);
-    for (const key of requiredKeys) {
-      if (!form[key]) { setError('Please fill in all fields.'); return; }
-    }
     setLoading(true);
+
     try {
+      let payload = { ...form };
+
+      if (tab === 'seller') {
+        payload = {
+          ...payload,
+          companyId: form.companyId || "ABN-TEMP",
+          legalEntityId: form.legalEntityId || "LEI-TEMP",
+          taxSchemeId: form.taxSchemeId || "GST",
+          contactName: form.contactName || form.name,
+          contactPhone: form.phone || "0400000000",
+          contactEmail: form.contactEmail || form.email,
+          name: form.name || form.businessName 
+        };
+      }
+
       const res = await fetch(`${API_BASE}/${tab}s/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('role', tab);
-      localStorage.setItem(tab === 'buyer' ? 'buyerId' : 'sellerId', data[tab === 'buyer' ? 'buyerId' : 'sellerId']);
-      navigate(tab === 'buyer' ? '/buyer/dashboard' : '/seller/dashboard');
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div style={{

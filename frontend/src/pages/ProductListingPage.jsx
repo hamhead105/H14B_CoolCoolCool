@@ -105,23 +105,53 @@ export default function ProductListingPage() {
     load();
   }, []);
 
-  const myProducts = products.filter(p => p.sellerId === sellerId);
+  const myProducts = products.filter(p => p.sellerId == sellerId);
   const filtered = myProducts.filter(p =>
     !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleAdd = async () => {
     setFormError('');
-    if (!form.name || !form.cost) { setFormError('Name and price are required.'); return; }
+    if (!form.name || !form.cost) { 
+      setFormError('Name and price are required.'); 
+      return; 
+    }
+    
     setFormLoading(true);
     try {
-      const body = { ...form, cost: parseFloat(form.cost), productTier: parseInt(form.productTier) || 1, discount: form.onSpecial ? parseFloat(form.discount) || 0 : 0 };
-      const res = await fetch(`${API_BASE}/products/`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+      const body = { 
+        ...form, 
+        productId: `PROD-${Date.now()}`, 
+        releaseDate: new Date().toISOString(), 
+        nextProduct: "", 
+        
+        cost: parseFloat(form.cost), 
+        productTier: parseInt(form.productTier) || 1, 
+        discount: form.onSpecial ? parseFloat(form.discount) || 0 : 0 
+      };
+
+      const res = await fetch(`${API_BASE}/products/`, { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json', 
+          Authorization: `Bearer ${token}` 
+        }, 
+        body: JSON.stringify(body) 
+      });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to create product');
-      setShowAdd(false); setForm(EMPTY_FORM); load();
-    } catch (e) { setFormError(e.message); } finally { setFormLoading(false); }
+      
+      setShowAdd(false); 
+      setForm(EMPTY_FORM); 
+      load();
+    } catch (e) { 
+      setFormError(e.message); 
+    } finally { 
+      setFormLoading(false); 
+    }
   };
+
 
   const handleEdit = async () => {
     setFormError('');

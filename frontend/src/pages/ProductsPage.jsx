@@ -245,13 +245,11 @@ function Sidebar({ navigate }) {
         { label: 'Dashboard', path: '/seller/dashboard', icon: '▦' },
         { label: 'My Products', path: '/products', icon: '◫', active: true },
         { label: 'Orders', path: '/orders', icon: '◨' },
-        { label: 'Account', path: '/account', icon: '○' },
       ]
     : [
         { label: 'Dashboard', path: '/buyer/dashboard', icon: '▦' },
         { label: 'Products', path: '/products', icon: '◫', active: true },
         { label: 'Cart', path: '/cart', icon: '◨' },
-        { label: 'Account', path: '/account', icon: '○' },
       ];
 
   return (
@@ -300,9 +298,27 @@ export default function ProductsPage() {
   const [selectedFamilies, setSelectedFamilies] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('');
   const [onSpecialOnly, setOnSpecialOnly] = useState(false);
-  const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cartPulse, setCartPulse] = useState(false);
+  const [cart, setCart] = useState(() => {
+    try { 
+      return JSON.parse(localStorage.getItem('cart') || '[]'); 
+    } catch { return []; }
+  });
+
+  const handleAddToCart = (product) => {
+    const updatedCart = [...cart];
+    const itemIndex = updatedCart.findIndex(item => item.productId === product.productId);
+
+    if (itemIndex > -1) {
+      updatedCart[itemIndex].qty += 1;
+    } else {
+      updatedCart.push({ ...product, qty: 1 });
+    }
+
+    setCart(updatedCart);
+    localStorage.setItem('cart', JSON.stringify(updatedCart));
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -331,13 +347,6 @@ export default function ProductsPage() {
   });
 
   const specialProducts = filteredProducts.filter(p => p.onSpecial);
-
-  const handleAdd = useCallback((product) => {
-    setCart(prev => prev.some(c => c.productId === product.productId) ? prev : [...prev, { ...product, qty: 1 }]);
-    setCartPulse(true);
-    setTimeout(() => setCartPulse(false), 400);
-  }, []);
-
   const toggleFamily = fam => setSelectedFamilies(prev => prev.includes(fam) ? prev.filter(f => f !== fam) : [...prev, fam]);
   const resetFilters = () => { setSelectedFamilies([]); setSelectedBrand(''); setOnSpecialOnly(false); setSearch(''); };
 
@@ -381,11 +390,20 @@ export default function ProductsPage() {
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={() => navigate('/cart')}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', background: cart.length ? '#eff6ff' : '#f8fafc', border: `1px solid ${cart.length ? '#bfdbfe' : '#e2e8f0'}`, borderRadius: '9px', fontSize: '13px', fontWeight: '600', color: cart.length ? '#2563eb' : '#64748b', cursor: 'pointer', transition: 'all 0.2s', transform: cartPulse ? 'scale(1.08)' : 'scale(1)' }}
+            <button 
+              onClick={() => navigate('/cart')} 
+              style={{ position: 'relative', cursor: 'pointer', /* your other styles */ }}
             >
-              <CartIcon />Cart
-              {cart.length > 0 && <span style={{ background: '#2563eb', color: '#fff', borderRadius: '10px', fontSize: '11px', fontWeight: '700', padding: '1px 6px' }}>{cart.length}</span>}
+              <CartIcon />
+              {cart.length > 0 && (
+                <span style={{ 
+                  position: 'absolute', top: '-8px', right: '-8px', 
+                  background: '#ef4444', color: 'white', borderRadius: '50%', 
+                  padding: '2px 6px', fontSize: '10px', fontWeight: 'bold' 
+                }}>
+                  {cart.length}
+                </span>
+              )}
             </button>
             <button onClick={() => { localStorage.clear(); navigate('/login'); }} title="Logout"
               style={{ width: '36px', height: '36px', background: '#f1f5f9', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -470,7 +488,13 @@ export default function ProductsPage() {
                       </span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
-                      {specialProducts.map(p => <ProductCard key={p.productId} product={p} onAdd={handleAdd} onView={setSelectedProduct} inCart={cart.some(c => c.productId === p.productId)} />)}
+                      {specialProducts.map(p => <ProductCard 
+                                                  key={p.productId} 
+                                                  product={p} 
+                                                  onAdd={handleAddToCart}
+                                                  onView={(prod) => navigate(`/products/${prod.productId}`)} 
+                                                  inCart={cart.some(c => c.productId === p.productId)}
+                                                />)}
                     </div>
                   </section>
                 )}
@@ -491,7 +515,7 @@ export default function ProductsPage() {
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
-                      {filteredProducts.map(p => <ProductCard key={p.productId} product={p} onAdd={handleAdd} onView={setSelectedProduct} inCart={cart.some(c => c.productId === p.productId)} />)}
+                      {filteredProducts.map(p => <ProductCard key={p.productId} product={p} onAdd={handleAddToCart} onView={setSelectedProduct} inCart={cart.some(c => c.productId === p.productId)} />)}
                     </div>
                   )}
                 </section>
@@ -502,14 +526,14 @@ export default function ProductsPage() {
                   <h2 style={{ fontSize: '17px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>Tree View</h2>
                   <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Products grouped by family. Lines connect items in the same product line.</p>
                 </div>
-                <TreeView products={filteredProducts} onView={setSelectedProduct} onAdd={handleAdd} cart={cart} />
+                <TreeView products={filteredProducts} onView={setSelectedProduct} onAdd={handleAddToCart} cart={cart} />
               </div>
             )}
           </main>
         </div>
       </div>
 
-      <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={handleAdd} inCart={selectedProduct ? cart.some(c => c.productId === selectedProduct.productId) : false} />
+      <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={handleAddToCart} inCart={selectedProduct ? cart.some(c => c.productId === selectedProduct.productId) : false} />
     </div>
   );
 }

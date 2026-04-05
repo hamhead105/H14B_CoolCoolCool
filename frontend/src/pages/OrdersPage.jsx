@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 
-// NOTE: Orders API endpoint not documented in spec — this page is built ready to
-// integrate when available. Currently shows placeholder state with expected data shape.
-// Replace ORDERS_ENDPOINT and response shape once the API is available.
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 

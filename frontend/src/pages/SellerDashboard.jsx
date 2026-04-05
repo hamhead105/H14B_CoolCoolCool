@@ -49,7 +49,7 @@ export default function SellerDashboard() {
     </div>
   );
 
-  const myProducts = products.filter(p => p.sellerId === sellerId);
+  const myProducts = products.filter(p => p.sellerId == sellerId);
   const onSpecial = myProducts.filter(p => p.onSpecial);
   const families = [...new Set(myProducts.map(p => p.family).filter(Boolean))];
 
