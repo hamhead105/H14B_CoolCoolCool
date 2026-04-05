@@ -128,8 +128,6 @@ function ProductDetail({ productId, onBack }) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 function App() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // High-level navigation: 'login', 'register', 'dashboard', or 'product'
   const [view, setView] = useState(() => {
@@ -172,7 +170,6 @@ function App() {
     const token = localStorage.getItem('token');
     if (!token) { setView('login'); return; }
 
-    setLoading(true);
     fetch('/products/', {
       method: 'GET',
       headers: {
@@ -189,9 +186,8 @@ function App() {
       })
       .then(data => {
         setProducts(Array.isArray(data) ? data : []);
-        setLoading(false);
       })
-      .catch(err => { setError(err.message); setLoading(false); });
+      .catch(err => { console.error(err.message); });
   }, [handleLogout]);
 
   useEffect(() => {
