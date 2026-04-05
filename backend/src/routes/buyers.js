@@ -1,5 +1,6 @@
 import express from 'express';
-import { register, login } from '../controllers/buyerController.js';
+import { register, login, getProfile, deleteProfile, updateProfile, getLoyalty } from '../controllers/buyerController.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -56,5 +57,82 @@ router.post('/register', register);
  *       401: { description: Invalid credentials }
  */
 router.post('/login', login);
+
+
+/**
+ * @swagger
+ * /buyers/{id}:
+ *   get:
+ *     summary: Get a buyer's profile
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Buyer profile }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.get('/:id', authMiddleware, getProfile);
+
+/**
+ * @swagger
+ * /buyers/{id}:
+ *   delete:
+ *     summary: Delete a buyer account
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Buyer deleted }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.delete('/:id', authMiddleware, deleteProfile);
+
+/**
+ * @swagger
+ * /buyers/{id}:
+ *   put:
+ *     summary: Update a buyer's profile
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Updated buyer profile }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.put('/:id', authMiddleware, updateProfile);
+
+/**
+ * @swagger
+ * /buyers/{id}/loyalty:
+ *   get:
+ *     summary: Get a buyer's loyalty points balance
+ *     tags: [Buyers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Loyalty points balance }
+ *       401: { description: Unauthorized }
+ *       404: { description: Buyer not found }
+ */
+router.get('/:id/loyalty', authMiddleware, getLoyalty);
 
 export default router;

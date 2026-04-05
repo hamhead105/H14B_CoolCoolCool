@@ -1,5 +1,6 @@
 import express from 'express';
-import { register, login } from '../controllers/sellerController.js';
+import { register, login, getProfile, deleteProfile, updateProfile } from '../controllers/sellerController.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -60,5 +61,62 @@ router.post('/register', register);
  */
 router.post('/login', login);
 
+/**
+ * @swagger
+ * /sellers/{id}:
+ *   get:
+ *     summary: Get a seller's profile
+ *     tags: [Sellers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Seller profile }
+ *       401: { description: Unauthorized }
+ *       404: { description: Seller not found }
+ */
+router.get('/:id', authMiddleware, getProfile);
+
+/**
+ * @swagger
+ * /sellers/{id}:
+ *   delete:
+ *     summary: Delete a seller account
+ *     tags: [Sellers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Seller deleted }
+ *       401: { description: Unauthorized }
+ *       404: { description: Seller not found }
+ */
+router.delete('/:id', authMiddleware, deleteProfile);
+
+/**
+ * @swagger
+ * /sellers/{id}:
+ *   put:
+ *     summary: Update a seller's profile
+ *     tags: [Sellers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200: { description: Updated seller profile }
+ *       400: { description: Bad request }
+ *       401: { description: Unauthorized }
+ *       404: { description: Seller not found }
+ */
+router.put('/:id', authMiddleware, updateProfile);
 
 export default router;

@@ -52,6 +52,47 @@ export async function loginBuyer({ email, password }) {
   return { token, buyerId: buyer.buyerId };
 }
 
+export async function getBuyerById(buyerId) {
+  return prisma.buyer.findUnique({
+    where: { buyerId },
+    select: {
+      buyerId: true, name: true, email: true, street: true,
+      city: true, postalCode: true, countryCode: true,
+      companyId: true, taxSchemeId: true, contactPhone: true,
+      loyaltyPoints: true, createdAt: true
+    }
+  });
+}
+
+export async function deleteBuyer(buyerId) {
+  await prisma.buyer.delete({ where: { buyerId } });
+}
+
+export async function updateBuyer(buyerId, data) {
+  const allowed = ['name', 'street', 'city', 'postalCode', 'countryCode', 'contactPhone'];
+  const updateData = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) updateData[key] = data[key];
+  }
+  return prisma.buyer.update({
+    where: { buyerId },
+    data: updateData,
+    select: {
+      buyerId: true, name: true, email: true, street: true,
+      city: true, postalCode: true, countryCode: true,
+      companyId: true, taxSchemeId: true, contactPhone: true,
+      loyaltyPoints: true, createdAt: true
+    }
+  });
+}
+
+export async function getBuyerLoyalty(buyerId) {
+  return prisma.buyer.findUnique({
+    where: { buyerId },
+    select: { buyerId: true, loyaltyPoints: true }
+  });
+}
+
 // SELLER
 
 export async function registerSeller(data) {
@@ -100,4 +141,40 @@ export async function loginSeller({ email, password }) {
   );
 
   return { token, sellerId: seller.sellerId };
+}
+
+export async function getSellerById(sellerId) {
+  return prisma.seller.findUnique({
+    where: { sellerId },
+    select: {
+      sellerId: true, name: true, email: true, street: true,
+      city: true, postalCode: true, countryCode: true,
+      companyId: true, legalEntityId: true, taxSchemeId: true,
+      contactName: true, contactPhone: true, contactEmail: true,
+      createdAt: true
+    }
+  });
+}
+
+export async function deleteSeller(sellerId) {
+  await prisma.seller.delete({ where: { sellerId } });
+}
+
+export async function updateSeller(sellerId, data) {
+  const allowed = ['name', 'street', 'city', 'postalCode', 'countryCode', 'companyId', 'legalEntityId', 'taxSchemeId', 'contactName', 'contactPhone', 'contactEmail'];
+  const updateData = {};
+  for (const key of allowed) {
+    if (data[key] !== undefined) updateData[key] = data[key];
+  }
+  return prisma.seller.update({
+    where: { sellerId },
+    data: updateData,
+    select: {
+      sellerId: true, name: true, email: true, street: true,
+      city: true, postalCode: true, countryCode: true,
+      companyId: true, legalEntityId: true, taxSchemeId: true,
+      contactName: true, contactPhone: true, contactEmail: true,
+      createdAt: true
+    }
+  });
 }
