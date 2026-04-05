@@ -1,57 +1,132 @@
-.auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background: #f0f2f5;
+:root {
+  --bg-dark: #3e3e4a;
+  --bg-node: #d9d9d9;
+  --accent: #2c2c34;
+  --text-light: #ffffff;
 }
 
-.auth-card {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
+body {
+  margin: 0;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  font-family: 'Inter', sans-serif;
 }
 
-.wide-card { max-width: 800px; }
-
-.auth-card input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-}
-
-.auth-card span {
-  color: #3498db;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.primary-btn {
-  width: 100%;
-  padding: 12px;
-  background: #2ecc71;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
+/* Header & Nav */
 .store-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: #2c3e50;
-  color: white;
+  padding: 20px 40px;
+  background: #2c2c34;
 }
 
-.logout-btn { background: #e74c3c; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; }
-.add-btn { background: #3498db; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+.view-toggle {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.view-toggle button {
+  background: #2c2c34;
+  border: 1px solid #555;
+  color: white;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: #4a4a55;
+}
+
+/* Tree Viewport (The Scrollable Area) */
+.tree-viewport {
+  width: 100%;
+  overflow-x: auto; /* Horizontal scroll */
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+.tree-container {
+  min-width: 1200px; /* Force width for scroll */
+  background-image: radial-gradient(#ffffff33 1px, transparent 1px);
+  background-size: 20px 20px; /* The dots */
+  border: 1px solid #ffffff33;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 100px;
+}
+
+.family-row {
+  position: relative;
+}
+
+.nodes-container {
+  display: grid;
+  grid-template-columns: repeat(5, 250px); /* Tiers 1-5 */
+  align-items: center;
+  position: relative;
+}
+
+/* The Node */
+.tree-node {
+  position: relative;
+  z-index: 2;
+}
+
+.node-box {
+  background: var(--bg-node);
+  width: 150px;
+  height: 180px;
+  border: 4px solid #2c2c34;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.node-img-placeholder { flex: 1; }
+
+.node-info {
+  background: #2c2c34;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.node-price { color: #aaa; font-size: 0.7rem; }
+
+/* Connecting Lines */
+.tree-line {
+  height: 2px;
+  background: white;
+  position: absolute;
+  top: 50%;
+  left: 150px; /* Start after the node box */
+  z-index: 1;
+  width: 100px; /* Spans to the next column */
+}
+
+/* Popular Sash */
+.popular-sash {
+  position: absolute;
+  top: 15px;
+  right: -25px;
+  background: #ff3b3b;
+  color: white;
+  padding: 2px 30px;
+  transform: rotate(45deg);
+  font-size: 0.6rem;
+  font-weight: bold;
+}
+
+.node-price-display .amount {
+  color: #ffffff; /* White text for the price on dark background */
+  font-size: 1.2rem;
+  font-weight: 400;
+  display: block;
+  text-align: center;
+  bottom: 0 
+}
