@@ -6,6 +6,7 @@ import healthRoutes from './routes/health.js';
 import docsRoutes from './routes/docs.js';
 import buyerRoutes from './routes/buyers.js'
 import sellerRoutes from './routes/sellers.js'
+import ratingRoutes from './routes/ratings.js';
 
 
 const app = express();
@@ -14,6 +15,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use('/orders', orderRoutes);
+app.use('/orders', ratingRoutes);
 app.use('/products', productRoutes);
 app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
