@@ -130,3 +130,219 @@ body {
   text-align: center;
   bottom: 0 
 }
+
+/* ─── Append these rules to your existing App.css ─── */
+
+/* ── Back button ─────────────────────────────────────────────────────────── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1.5px solid currentColor;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.back-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+/* ── Detail page layout ──────────────────────────────────────────────────── */
+.detail-page {
+  padding: 24px 32px 48px;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: fadeSlideUp 0.25s ease both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.detail-topbar {
+  margin-bottom: 32px;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 40px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-family  { background: rgba(99,  102, 241, 0.18); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.35); }
+.badge-brand   { background: rgba(16,  185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+.badge-sale    { background: rgba(239, 68,  68,  0.18); color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
+
+/* ── Identity ────────────────────────────────────────────────────────────── */
+.detail-name {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.detail-id {
+  font-size: 0.78rem;
+  opacity: 0.45;
+  margin: 0 0 24px;
+  font-family: monospace;
+  letter-spacing: 0.04em;
+}
+
+/* ── Pricing block ───────────────────────────────────────────────────────── */
+.detail-price-block {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.detail-price-final {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.detail-price-original {
+  font-size: 1.3rem;
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.detail-discount-label {
+  padding: 2px 8px;
+  background: rgba(239,68,68,0.2);
+  color: #fca5a5;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ── Description ─────────────────────────────────────────────────────────── */
+.detail-description {
+  font-size: 0.98rem;
+  line-height: 1.7;
+  opacity: 0.75;
+  max-width: 580px;
+}
+
+/* ── Metadata panel ──────────────────────────────────────────────────────── */
+.detail-meta-panel {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  padding: 24px;
+}
+.detail-meta-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.45;
+  margin: 0 0 20px;
+}
+.detail-meta-list {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 16px;
+}
+.meta-row:last-child { border-bottom: none; }
+.meta-row dt {
+  font-size: 0.82rem;
+  opacity: 0.5;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.meta-row dd {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* tier pip */
+.tier-pip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(99,102,241,0.25);
+  color: #a5b4fc;
+  font-weight: 800;
+  font-size: 0.82rem;
+  border: 1.5px solid rgba(99,102,241,0.4);
+}
+
+/* ── Loading / error states ──────────────────────────────────────────────── */
+.detail-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 300px;
+  opacity: 0.7;
+}
+.detail-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255,255,255,0.12);
+  border-top-color: rgba(255,255,255,0.6);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.detail-error {
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+/* ── Make tree nodes & product cards show a pointer cursor ───────────────── */
+.tree-node { cursor: pointer; }
+.product-card { cursor: pointer; }
+.tree-node:focus-visible .node-box,
+.product-card:focus-visible {
+  outline: 2px solid rgba(99,102,241,0.7);
+  outline-offset: 2px;
+}
