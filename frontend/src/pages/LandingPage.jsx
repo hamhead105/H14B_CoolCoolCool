@@ -114,18 +114,28 @@ const IconChart = () => (
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [shouldMountSpline, setShouldMountSpline] = useState(false);
   const [splineLoaded, setSplineLoaded] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [navScrolled, setNavScrolled] = useState(false);
   const heroRef = useRef(null);
   const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 500], [1, 0]);
   const heroY = useTransform(scrollY, [0, 500], [0, 100]);
+  
 
-  useEffect(() => {
-    const onScroll = () => setNavScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+useEffect(() => {
+  const onScroll = () => setNavScrolled(window.scrollY > 20);
+  window.addEventListener('scroll', onScroll);
+
+  const timer = setTimeout(() => {
+    setShouldMountSpline(true);
+  }, 1000);
+
+  return () => {
+    window.removeEventListener('scroll', onScroll);
+    clearTimeout(timer);
+  };
+}, []);
 
   const features = [
     { icon: <IconBox />, title: 'Live Product Catalog', desc: 'Browse thousands of verified SKUs with real-time pricing, supplier specials, and tier-based ordering in grid or tree view.' },
@@ -137,7 +147,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div style={{ fontFamily: "'Geist', 'Segoe UI', sans-serif", background: '#fafaf9', overflow: 'hidden', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'Geist', 'Segoe UI', sans-serif", background: '#fafaf9', overflowX: 'hidden' }}>
 
       {/* ── Navbar ── */}
       <motion.nav
@@ -145,13 +155,22 @@ export default function LandingPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
         style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 56px', height: '64px',
-          background: navScrolled ? 'rgba(255,255,255,0.9)' : 'transparent',
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          zIndex: 200,
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          padding: '0 56px', 
+          height: '64px',
+          // Force the background color to override App.css
+          backgroundColor: navScrolled ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
           backdropFilter: navScrolled ? 'blur(12px)' : 'none',
-          borderBottom: navScrolled ? '1px solid rgba(0,0,0,0.07)' : '1px solid transparent',
-          transition: 'all 0.3s ease',
+          WebkitBackdropFilter: navScrolled ? 'blur(12px)' : 'none', // For Safari support
+          borderBottom: navScrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+          transition: 'background-color 0.4s ease, border-bottom 0.4s ease, backdrop-filter 0.4s ease',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -196,7 +215,8 @@ export default function LandingPage() {
       <section ref={heroRef} style={{
         position: 'relative', height: '100vh', minHeight: '700px',
         background: 'linear-gradient(135deg, #050d1a 0%, #0d1f3c 55%, #0a1628 100%)',
-        display: 'flex', alignItems: 'center', overflow: 'hidden',
+        display: 'flex', alignItems: 'center', overflow: 'hidden', contain: 'layout', 
+        isolation: 'isolate'
       }}>
         {/* Grid texture */}
         <div style={{
@@ -218,33 +238,76 @@ export default function LandingPage() {
         }} />
 
         {/* Spline scene — right half */}
-        <motion.div style={{
-          position: 'absolute', 
-          right: '-51%', 
-          top: '50%',
-          y: '-50%', 
-          width: '120%', 
-          height: '120%',
-          scale: 0.6,
-          opacity: heroOpacity, 
-          zIndex: 1,
-          transformOrigin: 'left center',
-        }}>
+        {shouldMountSpline && (
+        <motion.div 
+          style={{
+            position: 'absolute', 
+            right: '-51%', 
+            top: '50%',
+            y: '-50%', 
+            width: '120%', 
+            height: '125%',
+            scale: 0.6,
+            zIndex: 1,
+            transformOrigin: 'left center',
+            pointerEvents: 'none',
+            /* The "Secret Sauce" to stop the jump */
+            contain: 'strict', 
+          }}
+          initial={{ opacity: 0, scale: 0.55}}
+          animate={{ opacity: splineLoaded ? 1 : 0, scale: splineLoaded ? 0.6 : 0.55 }}
+          transition={{ duration: 2, ease: "easeOut" }}
+        >
+          {/* ── Custom Loading Bar ── */}
           {!splineLoaded && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: '28px', height: '28px', border: '2px solid rgba(255,255,255,0.08)', borderTopColor: 'rgba(255,255,255,0.35)', borderRadius: '50%', animation: 'spin 0.9s linear infinite' }} />
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '20px',
+              zIndex: 5
+            }}>
+              <div style={{
+                width: '200px',
+                height: '2px',
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${loadProgress}%` }}
+                  style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #60a5fa, #a78bfa)',
+                    boxShadow: '0 0 15px rgba(96,165,250,0.5)'
+                  }}
+                />
+              </div>
+              <span style={{ 
+                fontSize: '10px', 
+                color: 'rgba(255,255,255,0.3)', 
+                letterSpacing: '2px', 
+                textTransform: 'uppercase',
+                fontFamily: "'Geist', sans-serif" 
+              }}>
+                Loading Experience {loadProgress}%
+              </span>
             </div>
           )}
+
           <Spline
             scene={SPLINE_URL}
-            onLoad={() => setSplineLoaded(true)}
-            style={{
-              width: '100%', height: '100%', pointerEvents: 'none',
-              opacity: splineLoaded ? 1 : 0, transition: 'opacity 1s ease',
-            }}
+            onLoad={() => setTimeout(() => setSplineLoaded(true), 200)}
+            onProgress={(e) => setLoadProgress(Math.floor(e * 100))}
+            style={{ width: '100%', height: '100%' }}
           />
         </motion.div>
-
+      )}
         {/* Hero copy — left */}
         <motion.div style={{
           position: 'relative', zIndex: 10,
