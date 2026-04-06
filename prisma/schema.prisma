@@ -64,17 +64,27 @@ model Order {
 }
 
 model Product {
+  productId    String    @id
+  name         String
+  description  String
+  cost         Float
+  brand        String
+  family       String
+  onSpecial    Boolean
+  discount     Float
+  productTier  Int
+  nextProduct  String
+  releaseDate  DateTime  @default(now())
+  sellerId     Int
+  seller       Seller    @relation(fields: [sellerId], references: [sellerId])
+  special      Special?
+}
+
+model Special {
   productId   String   @id
-  name        String
-  description String
-  cost        Float
-  brand       String
-  family      String
-  onSpecial   Boolean
+  product     Product  @relation(fields: [productId], references: [productId], onDelete: Cascade)
   discount    Float
-  productTier Int
-  nextProduct String
-  releaseDate DateTime @default(now())
-  sellerId    Int
-  seller      Seller   @relation(fields: [sellerId], references: [sellerId])
+  theme       String?
+  startDate   DateTime
+  endDate     DateTime
 }
