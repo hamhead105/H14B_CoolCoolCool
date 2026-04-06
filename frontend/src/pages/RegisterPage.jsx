@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
-const SPLINE_URL = 'https://prod.spline.design/6dXmJA1fXzGeP7Yl/scene.splinecode';
+const SPLINE_URL = 'https://prod.spline.design/JEgENMw8qsjdXOd9/scene.splinecode';
 
 const BUYER_FIELDS = [
   { label: 'Full Name', key: 'name', placeholder: 'John Citizen' },
@@ -52,11 +52,11 @@ export default function RegisterPage() {
     try {
       const payload = { ...form };
       if (tab === 'seller') {
-        payload.companyId = form.companyId || 'ABN-TEMP';
-        payload.legalEntityId = form.legalEntityId || 'LEI-TEMP';
-        payload.taxSchemeId = form.taxSchemeId || 'GST';
+        payload.companyId = form.companyId || 'NOT-PROVIDED';
+        payload.legalEntityId = form.legalEntityId || 'NOT-PROVIDED';
+        payload.taxSchemeId = form.taxSchemeId || 'NOT-PROVIDED';
         payload.contactName = form.contactName || form.name;
-        payload.contactPhone = form.contactPhone || '0400000000';
+        payload.contactPhone = form.contactPhone || 'NOT-PROVIDED';
         payload.contactEmail = form.contactEmail || form.email;
       }
       const res = await fetch(`${API_BASE}/${tab}s/register`, {
@@ -91,6 +91,32 @@ export default function RegisterPage() {
       margin: 0, padding: 0, boxSizing: 'border-box',
     }}>
 
+      {/* ── THE CURTAIN (Hides everything until Spline is ready) ── */}
+      <AnimatePresence>
+        {!splineLoaded && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999,
+              background: '#050d1a', 
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {/* Your brand spinner */}
+            <div style={{
+              width: '40px', height: '40px', 
+              border: '3px solid rgba(255,255,255,0.1)', 
+              borderTopColor: '#2563eb', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite',
+              marginBottom: '16px'
+            }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.button
         initial={{ opacity: 0, x: -12 }}
         animate={{ opacity: 1, x: 0 }}
@@ -122,13 +148,9 @@ export default function RegisterPage() {
         justifyContent: 'flex-end',
         overflow: 'hidden',
         height: '100vh',
+        scale: 1.5,
       }}>
-        {/* Grid */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 0,
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
-          backgroundSize: '64px 64px',
-        }} />
+        
         {/* Glows */}
         <div style={{ position: 'absolute', top: '15%', left: '10%', width: '700px', height: '700px', background: 'radial-gradient(ellipse, rgba(37,99,235,0.10) 0%, transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />
         <div style={{ position: 'absolute', bottom: '20%', right: '5%', width: '400px', height: '400px', background: 'radial-gradient(ellipse, rgba(124,58,237,0.08) 0%, transparent 65%)', pointerEvents: 'none', zIndex: 0 }} />

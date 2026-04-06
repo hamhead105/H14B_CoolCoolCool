@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
-const SPLINE_URL = 'https://prod.spline.design/6dXmJA1fXzGeP7Yl/scene.splinecode';
+const SPLINE_URL = 'https://prod.spline.design/JEgENMw8qsjdXOd9/scene.splinecode';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -52,6 +52,32 @@ export default function LoginPage() {
       overflow: 'hidden',
       margin: 0, padding: 0, boxSizing: 'border-box',
     }}>
+      {/* ── THE CURTAIN (Hides everything until Spline is ready) ── */}
+      <AnimatePresence>
+        {!splineLoaded && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999,
+              background: '#050d1a', 
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {/* Your brand spinner */}
+            <div style={{
+              width: '40px', height: '40px', 
+              border: '3px solid rgba(255,255,255,0.1)', 
+              borderTopColor: '#2563eb', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite',
+              marginBottom: '16px'
+            }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       <motion.button
         initial={{ opacity: 0, x: -12 }}
         animate={{ opacity: 1, x: 0 }}
@@ -85,12 +111,7 @@ export default function LoginPage() {
         justifyContent: 'center',
         overflow: 'hidden',
       }}>
-        {/* Grid texture */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 0,
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
-          backgroundSize: '64px 64px',
-        }} />
+
         {/* Blue glow */}
         <div style={{
           position: 'absolute', top: '20%', left: '20%',
@@ -101,14 +122,19 @@ export default function LoginPage() {
 
         {/* Spline scene */}
         <div style={{
-          position: 'absolute', inset: 0, zIndex: 1,
+          position: 'absolute',
+          top: -100,
+          left: 150,
+          width: '100%',
+          height: '100%', zIndex: 1,
           opacity: splineLoaded ? 1 : 0,
           transition: 'opacity 1.2s ease',
+          scale: '1.2'
         }}>
           <Spline
             scene={SPLINE_URL}
             onLoad={() => setSplineLoaded(true)}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', height: '100%', }}
           />
         </div>
 
@@ -117,8 +143,27 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          style={{
-            position: 'absolute', bottom: '56px', left: '56px', zIndex: 10,
+          style={{ 
+            position: 'absolute', // Swapped from relative so it ignores the flexbox centering
+            bottom: '-5px',       // Pins it to the bottom
+            left: '-15px',         // Pins it to the left edge
+            zIndex: 10, 
+            
+            /* ── The Glassmorphism Effect ── */
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)', // Keeps it working smoothly on Safari
+            
+            /* ── Card Styling ── */
+            borderRadius: '16px', 
+            padding: '24px 32px', // Nice, even spacing inside the glass card
+            display: 'inline-block', // Prevents the glass from stretching all the way across the page
+            
+            /* ── Positioning ── */
+            // Since we removed '0 56px 56px' padding, we use margin to push it away from the edges
+            marginLeft: '56px',
+            marginBottom: '56px',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>

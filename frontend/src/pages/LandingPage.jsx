@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
 
 const SPLINE_URL = 'https://prod.spline.design/jmUiqNu0B7WeVqtL/scene.splinecode';
@@ -116,7 +116,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [shouldMountSpline, setShouldMountSpline] = useState(false);
   const [splineLoaded, setSplineLoaded] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
+  const [, setLoadProgress] = useState(0);
   const [navScrolled, setNavScrolled] = useState(false);
   const heroRef = useRef(null);
   const { scrollY } = useScroll();
@@ -237,77 +237,59 @@ useEffect(() => {
           pointerEvents: 'none', zIndex: 0,
         }} />
 
-        {/* Spline scene — right half */}
-        {shouldMountSpline && (
-        <motion.div 
+        {/* ── Spline scene — right half ── */}
+        <div 
           style={{
-            position: 'absolute', 
-            right: '-51%', 
-            top: '50%',
-            y: '-50%', 
-            width: '120%', 
-            height: '125%',
-            scale: 0.6,
-            zIndex: 1,
-            transformOrigin: 'left center',
-            pointerEvents: 'none',
-            /* The "Secret Sauce" to stop the jump */
+            position: 'absolute', right: '-25%', top: '50%', transform: 'translateY(-50%)', 
+            width: '120%', height: '125%', zIndex: 1,
+            transformOrigin: 'left center', pointerEvents: 'none',
             contain: 'strict', 
           }}
-          initial={{ opacity: 0, scale: 0.55}}
-          animate={{ opacity: splineLoaded ? 1 : 0, scale: splineLoaded ? 0.6 : 0.55 }}
-          transition={{ duration: 2, ease: "easeOut" }}
         >
-          {/* ── Custom Loading Bar ── */}
-          {!splineLoaded && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '20px',
-              zIndex: 5
-            }}>
-              <div style={{
-                width: '200px',
-                height: '2px',
-                background: 'rgba(255,255,255,0.05)',
-                borderRadius: '10px',
-                overflow: 'hidden',
-                position: 'relative'
-              }}>
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${loadProgress}%` }}
-                  style={{
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #60a5fa, #a78bfa)',
-                    boxShadow: '0 0 15px rgba(96,165,250,0.5)'
-                  }}
-                />
-              </div>
-              <span style={{ 
-                fontSize: '10px', 
-                color: 'rgba(255,255,255,0.3)', 
-                letterSpacing: '2px', 
-                textTransform: 'uppercase',
-                fontFamily: "'Geist', sans-serif" 
-              }}>
-                Loading Experience {loadProgress}%
-              </span>
-            </div>
-          )}
+          {/* 1. Loading Bar: Mounts immediately, fades out when Spline loads */}
+          <AnimatePresence>
+            {!splineLoaded && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }} // Fades out smoothly!
+                transition={{ duration: 0.6 }}
+                style={{
+                  position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', gap: '20px', zIndex: 5,
+                }}
+              >
+                {/* Your brand spinner */}
+                <div style={{
+                  width: '40px', height: '40px', 
+                  border: '3px solid rgba(255,255,255,0.1)', 
+                  borderTopColor: '#2563eb', 
+                  borderRadius: '50%', 
+                  animation: 'spin 1s linear infinite',
+                  marginBottom: '16px'
+                }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <Spline
-            scene={SPLINE_URL}
-            onLoad={() => setTimeout(() => setSplineLoaded(true), 200)}
-            onProgress={(e) => setLoadProgress(Math.floor(e * 100))}
-            style={{ width: '100%', height: '100%' }}
-          />
-        </motion.div>
-      )}
+          {/* 2. Spline Canvas: Waits for the delay, then fades in */}
+          {shouldMountSpline && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.55 }}
+              animate={{ opacity: splineLoaded ? 1 : 0, scale: splineLoaded ? 0.6 : 0.55 }}
+              transition={{ duration: 2, ease: "easeOut" }}
+              style={{ width: '100%', height: '100%' }}
+            >
+              <Spline
+                scene={SPLINE_URL}
+                onLoad={() => setTimeout(() => setSplineLoaded(true), 200)}
+                onProgress={(e) => setLoadProgress(Math.floor(e * 100))}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </motion.div>
+          )}
+        </div>
+
         {/* Hero copy — left */}
         <motion.div style={{
           position: 'relative', zIndex: 10,

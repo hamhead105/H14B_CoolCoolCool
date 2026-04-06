@@ -45,88 +45,111 @@ export default function CartPage() {
 
   const handleOrder = async () => {
     const token = localStorage.getItem('token');
-    const buyerData = {
-      name: localStorage.getItem('name'),
-      email: localStorage.getItem('email'),
-      street: localStorage.getItem('street'),
-      city: localStorage.getItem('city'),
-      postalCode: localStorage.getItem('postalCode'),
-      countryCode: localStorage.getItem('countryCode'),
-      companyId: localStorage.getItem('companyId'),
-      taxSchemeId: localStorage.getItem('taxSchemeId'),
-      legalEntityId: localStorage.getItem('legalEntityId'),
-      contactName: localStorage.getItem('contactName'),
-      contactPhone: localStorage.getItem('contactPhone'),
-      contactEmail: localStorage.getItem('contactEmail')
-    };
+    const buyerId = localStorage.getItem('buyerId');
 
-    const orderPayload = {
-    order: { 
-      id: `ORD-${Date.now()}`,
-      currencyID: "AUD",
-      issueDate: new Date().toISOString().split('T')[0],
-      note: "Standard B2B Order"
-    },
-    buyer: buyerData,
+    if (!token || !buyerId) {
+      alert("Authentication missing. Please log in.");
+      return;
+    }
+    
+    try {
+      // 2. Fetch the fresh, complete profile directly from the database
+      const profileRes = await fetch(`${API_BASE}/buyers/${buyerId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!profileRes.ok) throw new Error("Failed to retrieve buyer profile from database.");
+      const dbBuyer = await profileRes.json();
 
-    seller: { 
-      name: "Multiple Sellers", 
-      street: "See Items", 
-      city: "N/A", 
-      postalCode: "0000", 
-      countryCode: "AU",
-      companyId: "N/A",
-      taxSchemeId: "GST",
-      legalEntityId: "N/A",
-      contactName: "N/A",
-      contactPhone: "N/A",
-      contactEmail: "N/A"
-    },
-    delivery: {
-      street: buyerData.street,
-      city: buyerData.city,
-      postalCode: buyerData.postalCode,
-      countryCode: buyerData.countryCode,
-      requestedStartDate: new Date().toISOString().split('T')[0],
-      requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] // +7 days
-    },
-    tax: { 
-      taxPercent: 10, 
-      taxTypeCode: "GST" 
-    },
-    items: cart.map((item, idx) => ({
-      id: (idx + 1).toString(),
-      quantity: Number(item.qty),
-      unitCode: "EA",
-      priceAmount: item.onSpecial ? Number(item.cost * (1 - item.discount)) : Number(item.cost),
-      product: {
-        name: item.name,
-        description: item.description || "",
-        sellersItemId: item.productId
-      },
-      sellerId: Number(item.sellerId)
-    }))
-  };
+      // 3. Map the database fields to the UBL structure, using fallbacks for strict validation
+      const buyerData = {
+        buyerId: buyerId,
+        name: dbBuyer.businessName || dbBuyer.name || "NOT-PROVIDED",
+        email: dbBuyer.email || "NOT-PROVIDED",
+        street: dbBuyer.address || dbBuyer.street || "NOT-PROVIDED",
+        city: dbBuyer.city || "NOT-PROVIDED",
+        postalCode: dbBuyer.postalCode || "0000",
+        countryCode: dbBuyer.countryCode || "AU",
+        companyId: dbBuyer.companyId || "NOT-PROVIDED",
+        taxSchemeId: dbBuyer.taxSchemeId || "GST",
+        legalEntityId: dbBuyer.legalEntityId || "NOT-PROVIDED",
+        contactName: dbBuyer.contactName || dbBuyer.name || "NOT-PROVIDED",
+        contactPhone: dbBuyer.phone || dbBuyer.contactPhone || "NOT-PROVIDED",
+        contactEmail: dbBuyer.contactEmail || dbBuyer.email || "NOT-PROVIDED",
+      };
 
-  try {
-    const res = await fetch(`${API_BASE}/orders`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(orderPayload)
-    });
+      // 4. Construct the precise UBL payload
+      const orderPayload = {
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Order failed');
+        buyerId: buyerId,
+        
+        order: { 
+          id: `ORD-${Date.now()}`,
+          currencyID: "AUD",
+          issueDate: new Date().toISOString().split('T')[0],
+          note: "Standard B2B Order"
+        },
+        buyer: buyerData,
+        seller: { 
+          name: "Multiple Sellers", 
+          street: "See Items", 
+          city: "N/A", 
+          postalCode: "0000", 
+          countryCode: "AU",
+          companyId: "N/A",
+          taxSchemeId: "GST",
+          legalEntityId: "N/A",
+          contactName: "N/A",
+          contactPhone: "N/A",
+          contactEmail: "N/A"
+        },
+        delivery: {
+          street: buyerData.street,
+          city: buyerData.city,
+          postalCode: buyerData.postalCode,
+          countryCode: buyerData.countryCode,
+          requestedStartDate: new Date().toISOString().split('T')[0],
+          requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] // +7 days
+        },
+        tax: { 
+          taxPercent: 10, 
+          taxTypeCode: "GST" 
+        },
+        items: cart.map((item, idx) => ({
+          id: (idx + 1).toString(),
+          quantity: Number(item.qty),
+          unitCode: "EA",
+          priceAmount: item.onSpecial ? Number(item.cost * (1 - item.discount)) : Number(item.cost),
+          product: {
+            name: item.name,
+            description: item.description || "",
+            // Ensure you catch the ID whether it's named productId or id in your cart state
+            sellersItemId: item.productId || item.id 
+          },
+          sellerId: Number(item.sellerId)
+        }))
 
-    setUblXml(data.ublDocument);
-    setOrderPlaced(true);
-    localStorage.removeItem('cart');
-    setCartState([]);
-  } catch (err) {
-    alert(`Order Error: ${err.message}`);
+        
+      };
+
+      const res = await fetch(`${API_BASE}/orders`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(orderPayload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Order failed');
+
+      setUblXml(data.ublDocument);
+      setOrderPlaced(true);
+      localStorage.removeItem('cart');
+      setCartState([]);
+    } catch (err) {
+      alert(`Order Error: ${err.message}`);
   }
 };
 
