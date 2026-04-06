@@ -94,15 +94,9 @@ const router = express.Router();
  *             schema:
  *               type: object
  *               properties:
- *                 orderId: { type: string }
- *                 status: { type: string }
- *                 totalCost: { type: number }
- *                 taxAmount: { type: number }
- *                 payableAmount: { type: number }
- *                 anticipatedMonetaryTotal: { type: number }
- *                 loyaltyPointsEarned: { type: integer }
- *                 loyaltyPointsRedeemed: { type: integer }
- *                 ublDocument: { type: string }
+ *                  orderId: { type: string }
+ *                  status: { type: string }
+ *                  ublDocument: { type: string }
  *       400:
  *         description: Bad request
  *       401:
@@ -139,14 +133,14 @@ router.post('/', (req, res, next) => {
  *             schema:
  *               type: object
  *               properties:
- *                 orderId: { type: string }
- *                 status: { type: string }
- *                 totalCost: { type: number }
- *                 taxAmount: { type: number }
- *                 payableAmount: { type: number }
- *                 anticipatedMonetaryTotal: { type: number }
- *                 createdAt: { type: string }
- *                 ublDocument: { type: string }
+ *                  orderId: { type: string }
+ *                  status: { type: string }
+ *                  totalCost: { type: number }
+ *                  inputData:
+ *                    type: object
+ *                    properties:
+ *                      items: { type: array }
+ *                      ublDocument: { type: string }
  *       401:
  *         description: Unauthorized
  *       404:
@@ -233,6 +227,7 @@ router.delete('/:id', (req, res, next) => {
  *                   status: { type: string }
  *                   totalCost: { type: number }
  *                   createdAt: { type: string }
+ *                   inputData: { type: object }
  *       401:
  *         description: Unauthorized
  *       500:
@@ -340,11 +335,7 @@ router.get('/', (req, res, next) => {
  *               properties:
  *                 orderId: { type: string }
  *                 status: { type: string }
- *                 totalCost: { type: number }
- *                 taxAmount: { type: number }
- *                 payableAmount: { type: number }
- *                 anticipatedMonetaryTotal: { type: number }
- *                 ublDocument: { type: string }
+ *                 inputData: { type: object }
  *       401:
  *         description: Unauthorized
  *       404:
