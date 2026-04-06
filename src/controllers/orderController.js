@@ -21,17 +21,24 @@ export async function postOrder(req, res) {
   }
 
   try {
-    const xml_output = create_xml(req.body);
-    const taxAmount = Number(getTaxAmount(req.body).toFixed(2));
-    const payableAmount = Number(getPayableAmount(req.body).toFixed(2));
-    const lineExtensionAmount = getLineExtension(req.body);
+    const initializedItems = items.map(item => ({
+      ...item,
+      itemStatus: 'pending'
+    }));
 
-    try {
+    const enrichedBody = { ...req.body, items: initializedItems };
+
+    const xml_output = create_xml(enrichedBody);
+    const taxAmount = Number(getTaxAmount(enrichedBody).toFixed(2));
+    const payableAmount = Number(getPayableAmount(enrichedBody).toFixed(2));
+    const lineExtensionAmount = getLineExtension(enrichedBody);
+
+    try{
       await createOrder({
         orderId: order.id,
-        buyerId: buyerId,
+        buyerId: parseInt(buyerId, 10),
         status: 'order placed',
-        inputData: req.body,
+        inputData: enrichedBody,
         totalCost: taxAmount + payableAmount,
         taxAmount,
         payableAmount,
@@ -40,10 +47,12 @@ export async function postOrder(req, res) {
         loyaltyPointsRedeemed: 0,
       });
     } catch (error) {
-    console.error(error);
-          return res.status(400).json({
-        error: "Duplicate order: An order with this ID already exists.",
-      });
+      if (error.code === 'P2002') {
+        return res.status(400).json({
+          error: "Duplicate order: An order with this ID already exists.",
+        });
+      }
+      throw error;
     }
 
     return res.status(200).json({
@@ -58,6 +67,7 @@ export async function postOrder(req, res) {
       ublDocument: xml_output
     });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: error.message });
   }
 }
@@ -75,14 +85,11 @@ export async function getOrder(req, res) {
     const xml_output = create_xml(found.inputData);
 
     return res.status(200).json({
-      orderId: found.orderId,
-      status: found.status,
-      totalCost: found.totalCost,
-      taxAmount: found.taxAmount,
-      payableAmount: found.payableAmount,
-      anticipatedMonetaryTotal: found.anticipatedMonetaryTotal,
-      createdAt: found.createdAt,
-      ublDocument: xml_output
+      ...found,
+      inputData: {
+        ...found.inputData,
+        ublDocument: xml_output
+      }
     });
   } catch (error) {
     console.error(error);
@@ -118,6 +125,7 @@ export async function deleteOrder(req, res) {
 
 export async function putOrder(req, res) {
   const orderId = req.params.id;
+  const { status, sellerId, order, buyer, seller, delivery, tax, items } = req.body;
 
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(422).json({ error: 'No valid fields provided.' });
@@ -125,44 +133,57 @@ export async function putOrder(req, res) {
 
   try {
     const existing = await getOrderById(orderId);
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
 
-    if (!existing) {
-      return res.status(404).json({ error: 'Order not found' });
+    let updatedItems = items || [...existing.inputData.items];
+    
+    if (sellerId && status) {
+      updatedItems = updatedItems.map(item => 
+        String(item.sellerId) === String(sellerId) 
+          ? { ...item, itemStatus: status } 
+          : item
+      );
+    }
+
+    let globalStatus = existing.status;
+    const allStatuses = updatedItems.map(i => i.itemStatus);
+    
+    if (allStatuses.every(s => s === 'despatched')) {
+      globalStatus = 'despatched';
+    } else if (allStatuses.some(s => s === 'despatched' || s === 'confirmed')) {
+      globalStatus = 'partially fulfilled';
     }
 
     const mergedInput = {
-      order: { ...existing.inputData.order, ...req.body.order },
-      buyer: { ...existing.inputData.buyer, ...req.body.buyer },
-      seller: { ...existing.inputData.seller, ...req.body.seller },
-      delivery: { ...existing.inputData.delivery, ...req.body.delivery },
-      tax: { ...existing.inputData.tax, ...req.body.tax },
-      items: req.body.items || existing.inputData.items,
+      ...existing.inputData,
+      order:    { ...existing.inputData.order,    ...(order || {}) },
+      buyer:    { ...existing.inputData.buyer,    ...(buyer || {}) },
+      seller:   { ...existing.inputData.seller,   ...(seller || {}) },
+      delivery: { ...existing.inputData.delivery, ...(delivery || {}) },
+      tax:      { ...existing.inputData.tax,      ...(tax || {}) },
+      items:    updatedItems
     };
 
     const xml_output = create_xml(mergedInput);
     const taxAmount = Number(getTaxAmount(mergedInput).toFixed(2));
     const payableAmount = Number(getPayableAmount(mergedInput).toFixed(2));
-    const lineExtensionAmount = getLineExtension(mergedInput);
 
     await updateOrder(orderId, {
+      status: globalStatus,
       inputData: mergedInput,
       totalCost: taxAmount + payableAmount,
       taxAmount,
       payableAmount,
-      anticipatedMonetaryTotal: lineExtensionAmount,
+      anticipatedMonetaryTotal: getLineExtension(mergedInput),
     });
 
     return res.status(200).json({
       orderId,
-      status: existing.status,
+      status: globalStatus,
       totalCost: taxAmount + payableAmount,
-      taxAmount,
-      payableAmount,
-      anticipatedMonetaryTotal: lineExtensionAmount,
-      ublDocument: xml_output
+      inputData: { ...mergedInput, ublDocument: xml_output }
     });
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
   }
@@ -181,7 +202,8 @@ export async function listOrders(req, res) {
       orderId: o.orderId,
       status: o.status,
       totalCost: o.totalCost,
-      createdAt: o.createdAt
+      createdAt: o.createdAt,
+      inputData: o.inputData
     })));
   } catch (error) {
     console.error(error);
