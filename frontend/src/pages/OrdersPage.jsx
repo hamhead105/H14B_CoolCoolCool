@@ -38,18 +38,47 @@ export default function OrdersPage() {
     })
       .then(r => r.json())
       .then(data => {
-        // Manual filter: Only show orders where at least one item belongs to this seller
-        const myOrders = data.filter(order => {
-          const items = order.inputData?.items || [];
-          return items.some(item => item.sellerId == currentSellerId);
-        });
+        const myOrders = data.reduce((acc, order) => {
+          const allItems = order.inputData?.items || [];
+          
+          const myItems = allItems.filter(item => String(item.sellerId) === String(currentSellerId));
+          
+          if (myItems.length > 0) {
+            const myTotal = myItems.reduce((sum, item) => sum + (Number(item.priceAmount) * Number(item.quantity)), 0);
+            
+            const buyerName = order.inputData?.buyer?.name || order.buyerId || 'Unknown Buyer';
+
+            acc.push({
+              ...order,
+              myItemsCount: myItems.length,
+              myTotalCost: myTotal, 
+              displayBuyerName: buyerName
+            });
+          }
+          return acc;
+        }, []);
+        
         setOrders(myOrders);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+  // 1. Helper to safely translate backend statuses to your frontend tabs
+  const getNormalizedStatus = (rawStatus) => {
+    if (!rawStatus) return 'pending';
+    const s = rawStatus.toLowerCase();
+    
+    // Map your backend's default status to the 'pending' tab
+    if (s === 'order placed') return 'pending'; 
+    
+    return s;
+  };
+
+  // 2. Run the filter using the translated status
+  const filtered = filter === 'all' 
+    ? orders 
+    : orders.filter(o => getNormalizedStatus(o.status) === filter);
 
   const tabs = [
     { key: 'all', label: 'All orders' },
@@ -138,15 +167,29 @@ export default function OrdersPage() {
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <td style={{ padding: '13px 16px', fontWeight: '600', color: '#0f172a' }}>{order.orderId}</td>
-                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.buyerName || order.buyerId}</td>
-                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.items?.length ?? 0}</td>
-                      <td style={{ padding: '13px 16px', fontWeight: '700', color: '#0f172a' }}>${Number(order.totalCost || 0).toFixed(2)}</td>
+                      
+                      {/* Fixed: Now pulls the extracted name */}
+                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.displayBuyerName}</td>
+                      
+                      {/* Fixed: Now shows the count of YOUR items */}
+                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.myItemsCount}</td>
+                      
+                      {/* Fixed: Now shows the total cost of YOUR items */}
+                      <td style={{ padding: '13px 16px', fontWeight: '700', color: '#0f172a' }}>${Number(order.myTotalCost).toFixed(2)}</td>
+                      
                       <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-AU') : '—'}</td>
                       <td style={{ padding: '13px 16px' }}><StatusBadge status={order.status || 'pending'} /></td>
                       <td style={{ padding: '13px 16px' }}>
-                        <button onClick={() => navigate(`/orders/${order.orderId}/despatch`)}
-                          style={{ padding: '5px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#2563eb', cursor: 'pointer' }}>
-                          Despatch →
+                        <button onClick={() => navigate(`/orders/${order.orderId}`)}
+                          style={{ 
+                            padding: '6px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', 
+                            borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#475569', 
+                            cursor: 'pointer', transition: 'all 0.15s' 
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569'; }}
+                        >
+                          View
                         </button>
                       </td>
                     </tr>

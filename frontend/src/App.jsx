@@ -11,6 +11,8 @@ import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import ProductListingPage from './pages/ProductListingPage';
 import CartPage from './pages/CartPage';
+import BuyerOrdersPage from './pages/BuyerOrdersPage';
+import OrderDetailsPage from './pages/OrderDetailsPage';
 import OrdersPage from './pages/OrdersPage';
 import DespatchPage from './pages/DespatchPage';
 
@@ -63,13 +65,16 @@ export default function App() {
         <Route path="/seller/products" element={
           <ProtectedRoute requiredRole="seller"><ProductListingPage /></ProtectedRoute>
         } />
+        <Route path="/buyer/orders" element={
+          <ProtectedRoute requiredRole="buyer"><BuyerOrdersPage /></ProtectedRoute>
+        } />
         <Route path="/orders" element={
           <ProtectedRoute requiredRole="seller"><OrdersPage /></ProtectedRoute>
         } />
         <Route path="/orders/:id/despatch" element={
           <ProtectedRoute requiredRole="seller"><DespatchPage /></ProtectedRoute>
         } />
-
+        <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
