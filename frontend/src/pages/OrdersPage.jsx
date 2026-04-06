@@ -1,21 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
-
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 
-const STATUS_STYLES = {
-  pending: { bg: '#fef9ec', color: '#d97706', label: 'Pending' },
-  confirmed: { bg: '#eff6ff', color: '#2563eb', label: 'Confirmed' },
-  despatched: { bg: '#f0fdf4', color: '#16a34a', label: 'Despatched' },
-  cancelled: { bg: '#fef2f2', color: '#dc2626', label: 'Cancelled' },
-};
+// ── Icons ─────────────────────────────────────────────────────
+const IcOrders = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
+);
 
+// ── Status Badge Component ────────────────────────────────────
 function StatusBadge({ status }) {
-  const s = STATUS_STYLES[status] || STATUS_STYLES.pending;
+  const map = {
+    pending:    { bg: 'rgba(245,158,11,0.12)', color: '#fbbf24', dot: '#f59e0b', label: 'Pending' },
+    confirmed:  { bg: 'rgba(37,99,235,0.12)',  color: '#60a5fa', dot: '#3b82f6', label: 'Confirmed' },
+    despatched: { bg: 'rgba(16,185,129,0.12)', color: '#34d399', dot: '#10b981', label: 'Despatched' },
+    cancelled:  { bg: 'rgba(239,68,68,0.12)',  color: '#f87171', dot: '#ef4444', label: 'Cancelled' },
+  };
+  const s = map[status?.toLowerCase()] || map.pending;
   return (
-    <span style={{ background: s.bg, color: s.color, fontSize: '11px', fontWeight: '700', padding: '3px 9px', borderRadius: '10px' }}>
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '6px',
+      background: s.bg, color: s.color,
+      fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
+      padding: '4px 12px', borderRadius: '20px',
+      border: `1px solid ${s.dot}30`,
+    }}>
+      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: s.dot }} />
       {s.label}
     </span>
   );
@@ -25,7 +39,6 @@ export default function OrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
@@ -40,164 +53,151 @@ export default function OrdersPage() {
       .then(data => {
         const myOrders = data.reduce((acc, order) => {
           const allItems = order.inputData?.items || [];
-          
           const myItems = allItems.filter(item => String(item.sellerId) === String(currentSellerId));
           
           if (myItems.length > 0) {
             const myTotal = myItems.reduce((sum, item) => sum + (Number(item.priceAmount) * Number(item.quantity)), 0);
-            
             const buyerName = order.inputData?.buyer?.name || order.buyerId || 'Unknown Buyer';
+            const myItemStatus = myItems[0]?.itemStatus || order.status || 'pending';
 
             acc.push({
               ...order,
               myItemsCount: myItems.length,
               myTotalCost: myTotal, 
-              displayBuyerName: buyerName
+              displayBuyerName: buyerName,
+              mySpecificStatus: myItemStatus
             });
           }
           return acc;
         }, []);
-        
         setOrders(myOrders);
       })
-      .catch(e => setError(e.message))
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  // 1. Helper to safely translate backend statuses to your frontend tabs
-  const getNormalizedStatus = (rawStatus) => {
-    if (!rawStatus) return 'pending';
-    const s = rawStatus.toLowerCase();
-    
-    // Map your backend's default status to the 'pending' tab
-    if (s === 'order placed') return 'pending'; 
-    
-    return s;
+  const getNormalizedStatus = (statusStr) => {
+    if (!statusStr) return 'pending';
+    const s = statusStr.toLowerCase();
+    return s === 'order placed' ? 'pending' : s;
   };
 
-  // 2. Run the filter using the translated status
   const filtered = filter === 'all' 
     ? orders 
-    : orders.filter(o => getNormalizedStatus(o.status) === filter);
+    : orders.filter(o => getNormalizedStatus(o.mySpecificStatus) === filter);
 
   const tabs = [
-    { key: 'all', label: 'All orders' },
+    { key: 'all', label: 'All Orders' },
     { key: 'pending', label: 'Pending' },
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'despatched', label: 'Despatched' },
   ];
 
   if (loading) return (
-    <div style={{ display: 'flex', height: '100vh', background: '#f8fafc', fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#050d1a' }}>
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '36px', height: '36px', border: '3px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', margin: '0 auto 14px', animation: 'spin 0.8s linear infinite' }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <div style={{ fontSize: '14px', color: '#64748b' }}>Loading orders…</div>
-        </div>
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.05)', borderTopColor: '#3b82f6', borderRadius: '50%' }} 
+        />
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc', fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#050d1a', fontFamily: "'Geist', sans-serif", overflow: 'hidden' }}>
       <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <header style={{ background: '#fff', borderBottom: '1px solid #e8eaf0', padding: '0 28px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
+        {/* ── Background Effects ── */}
+        <div style={{ position: 'fixed', inset: 0, left: '254px', zIndex: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: `linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+            <div style={{ position: 'absolute', top: '-10%', right: '10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)' }} />
+        </div>
+
+        {/* ── Header ── */}
+        <header style={{ height: '70px', padding: '0 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(5,13,26,0.6)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.06)', zIndex: 10 }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Orders</div>
-            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{orders.length} total order{orders.length !== 1 ? 's' : ''}</div>
+            <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#fff', letterSpacing: '-0.5px', margin: 0 }}>Incoming Orders</h1>
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0' }}>Fulfill your item allocations</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+             <div style={{ textAlign: 'right' }}>
+               <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Volume</div>
+               <div style={{ fontSize: '16px', fontWeight: '800', color: '#fff' }}>{orders.length}</div>
+             </div>
           </div>
         </header>
 
-        <main style={{ flex: 1, padding: '28px', overflowY: 'auto' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.3px' }}>Incoming Orders</h1>
-            <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Manage, confirm, and despatch buyer orders.</p>
-          </div>
-
-          {/* Tab filter */}
-          <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '10px', width: 'fit-content', marginBottom: '24px' }}>
+        <main style={{ flex: 1, padding: '40px', overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+          
+          {/* ── Tabs ── */}
+          <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', width: 'fit-content', marginBottom: '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
             {tabs.map(t => (
               <button key={t.key} onClick={() => setFilter(t.key)}
                 style={{
-                  padding: '7px 14px', border: 'none', borderRadius: '8px', cursor: 'pointer',
-                  background: filter === t.key ? '#fff' : 'transparent',
-                  color: filter === t.key ? '#0f172a' : '#64748b',
-                  fontSize: '12px', fontWeight: '600',
-                  boxShadow: filter === t.key ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                  transition: 'all 0.15s',
+                  padding: '8px 20px', border: 'none', borderRadius: '9px', cursor: 'pointer',
+                  background: filter === t.key ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  color: filter === t.key ? '#fff' : 'rgba(255,255,255,0.4)',
+                  fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
                 }}
               >{t.label}</button>
             ))}
           </div>
 
-          {error ? (
-            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e8eaf0', padding: '60px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '36px', marginBottom: '14px' }}>🔌</div>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>Orders not available</div>
-              <div style={{ fontSize: '13px', color: '#64748b', maxWidth: '360px', margin: '0 auto', lineHeight: '1.6' }}>
-                {error === 'Orders endpoint not available yet'
-                  ? 'The orders API endpoint is not yet implemented on the backend. This page is ready to display orders once the endpoint is available.'
-                  : error
-                }
-              </div>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e8eaf0', padding: '60px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '36px', marginBottom: '14px' }}>📋</div>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>No orders yet</div>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>When buyers place orders for your products, they'll appear here.</div>
-            </div>
-          ) : (
-            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e8eaf0', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
-                    {['Order ID', 'Buyer', 'Items', 'Total', 'Date', 'Status', 'Actions'].map(h => (
-                      <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(order => (
-                    <tr key={order.orderId} style={{ borderBottom: '1px solid #f1f5f9' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
+          {/* ── Table Container ── */}
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+                  {['Order ID', 'Buyer', 'Your Items', 'Your Revenue', 'Date', 'Your Status', ''].map(h => (
+                    <th key={h} style={{ padding: '18px 24px', fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence mode='popLayout'>
+                  {filtered.map((order, i) => (
+                    <motion.tr 
+                      key={order.orderId}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <td style={{ padding: '13px 16px', fontWeight: '600', color: '#0f172a' }}>{order.orderId}</td>
-                      
-                      {/* Fixed: Now pulls the extracted name */}
-                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.displayBuyerName}</td>
-                      
-                      {/* Fixed: Now shows the count of YOUR items */}
-                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.myItemsCount}</td>
-                      
-                      {/* Fixed: Now shows the total cost of YOUR items */}
-                      <td style={{ padding: '13px 16px', fontWeight: '700', color: '#0f172a' }}>${Number(order.myTotalCost).toFixed(2)}</td>
-                      
-                      <td style={{ padding: '13px 16px', color: '#64748b' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-AU') : '—'}</td>
-                      <td style={{ padding: '13px 16px' }}><StatusBadge status={order.status || 'pending'} /></td>
-                      <td style={{ padding: '13px 16px' }}>
-                        <button onClick={() => navigate(`/orders/${order.orderId}`)}
-                          style={{ 
-                            padding: '6px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', 
-                            borderRadius: '6px', fontSize: '12px', fontWeight: '600', color: '#475569', 
-                            cursor: 'pointer', transition: 'all 0.15s' 
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#0f172a'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#475569'; }}
-                        >
-                          View
-                        </button>
+                      <td style={{ padding: '20px 24px', color: '#fff', fontWeight: '700', fontSize: '14px', fontFamily: 'monospace' }}>#{order.orderId.split('-').pop()}</td>
+                      <td style={{ padding: '20px 24px', color: 'rgba(255,255,255,0.8)', fontWeight: '500' }}>{order.displayBuyerName}</td>
+                      <td style={{ padding: '20px 24px', color: 'rgba(255,255,255,0.5)' }}>{order.myItemsCount} SKU{order.myItemsCount !== 1 ? 's' : ''}</td>
+                      <td style={{ padding: '20px 24px', color: '#fff', fontWeight: '800' }}>${Number(order.myTotalCost).toFixed(2)}</td>
+                      <td style={{ padding: '20px 24px', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{new Date(order.createdAt).toLocaleDateString('en-AU')}</td>
+                      <td style={{ padding: '20px 24px' }}>
+                        <StatusBadge status={getNormalizedStatus(order.mySpecificStatus)} />
                       </td>
-                    </tr>
+                      <td style={{ padding: '20px 24px', textAlign: 'right' }}>
+                        <motion.button 
+                          whileHover={{ scale: 1.05, background: 'rgba(255,255,255,0.1)' }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => navigate(`/orders/${order.orderId}`)}
+                          style={{ padding: '8px 18px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                        >
+                          Details
+                        </motion.button>
+                      </td>
+                    </motion.tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                </AnimatePresence>
+              </tbody>
+            </table>
+
+            {filtered.length === 0 && (
+              <div style={{ padding: '80px 0', textAlign: 'center', color: 'rgba(255,255,255,0.2)' }}>
+                <IcOrders />
+                <div style={{ marginTop: '12px', fontSize: '14px' }}>No orders found in this category.</div>
+              </div>
+            )}
+          </div>
         </main>
       </div>
     </div>

@@ -114,32 +114,6 @@ function StatCard({ label, value, sub, accent, icon, delay, trend }) {
   );
 }
 
-// ── Status badge ──────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    'order placed': { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', dot: '#3b82f6' },
-    pending:        { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24', dot: '#f59e0b' },
-    confirmed:      { bg: 'rgba(34,197,94,0.15)',  color: '#4ade80', dot: '#22c55e' },
-    despatched:     { bg: 'rgba(139,92,246,0.15)', color: '#a78bfa', dot: '#8b5cf6' },
-    cancelled:      { bg: 'rgba(239,68,68,0.15)',  color: '#f87171', dot: '#ef4444' },
-  };
-  const key = status?.toLowerCase() || 'pending';
-  const s = map[key] || map.pending;
-  const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Pending';
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '5px',
-      background: s.bg, color: s.color,
-      fontSize: '11px', fontWeight: '700',
-      padding: '3px 10px', borderRadius: '20px',
-      border: `1px solid ${s.dot}35`,
-    }}>
-      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
-      {label}
-    </span>
-  );
-}
-
 // ── Main ──────────────────────────────────────────────────────
 export default function SellerDashboard() {
   const navigate = useNavigate();
@@ -162,8 +136,16 @@ export default function SellerDashboard() {
       fetch(`${API_BASE}/orders/`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : []),
     ]).then(([s, p, o]) => {
       setSeller(s);
-      setProducts(Array.isArray(p) ? p.filter(prod => String(prod.sellerId) === String(sellerId)) : []);
-      setOrders(Array.isArray(o) ? o.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : []);
+
+      const myProds = Array.isArray(p) ? p.filter(prod => String(prod.sellerId) === String(sellerId)) : [];
+      setProducts(myProds);
+
+      const myFilteredOrders = Array.isArray(o) ? o.filter(order => {
+        const items = order.inputData?.items || [];
+        return items.some(item => String(item.sellerId) === String(sellerId));
+      }) : [];
+      
+      setOrders(myFilteredOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     }).catch(() => {}).finally(() => setLoading(false));
 
     return () => clearTimeout(t);

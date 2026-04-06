@@ -82,7 +82,7 @@ export default function CartPage() {
       const orderPayload = {
 
         buyerId: buyerId,
-        
+
         order: { 
           id: `ORD-${Date.now()}`,
           currencyID: "AUD",
@@ -116,18 +116,19 @@ export default function CartPage() {
           taxTypeCode: "GST" 
         },
         items: cart.map((item, idx) => ({
-          id: (idx + 1).toString(),
-          quantity: Number(item.qty),
-          unitCode: "EA",
-          priceAmount: item.onSpecial ? Number(item.cost * (1 - item.discount)) : Number(item.cost),
-          product: {
-            name: item.name,
-            description: item.description || "",
-            // Ensure you catch the ID whether it's named productId or id in your cart state
-            sellersItemId: item.productId || item.id 
-          },
-          sellerId: Number(item.sellerId)
-        }))
+        id: (idx + 1).toString(),
+        quantity: Number(item.qty),
+        unitCode: "EA",
+        priceAmount: item.onSpecial ? Number(item.cost * (1 - item.discount)) : Number(item.cost),
+        product: {
+          name: item.name,
+          description: item.description || "",
+          sellersItemId: item.productId || item.id 
+        },
+        // CRITICAL: Ensure sellerId is passed as a Number to match DB schema if needed, 
+        // though string is usually fine for JSON blobs.
+        sellerId: String(item.sellerId) 
+      }))
 
         
       };
