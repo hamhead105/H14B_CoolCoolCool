@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
@@ -57,13 +57,14 @@ const SearchIcon = () => (
   </svg>
 );
 
-function ProductCard({ product, onAdd, onView, inCart }) {
+function ProductCard({ product, onAdd, onNavigate, inCart }) {
   const finalPrice = product.onSpecial
     ? (product.cost * (1 - product.discount)).toFixed(2)
     : Number(product.cost).toFixed(2);
 
   return (
     <div
+      onClick={() => onNavigate(product)}
       style={{
         background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px',
         overflow: 'hidden', transition: 'box-shadow 0.2s, transform 0.2s',
@@ -106,7 +107,7 @@ function ProductCard({ product, onAdd, onView, inCart }) {
         </div>
         <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
           <button
-            onClick={e => { e.stopPropagation(); onView(product); }}
+            onClick={e => { e.stopPropagation(); onNavigate(product); }}
             style={{
               flex: 1, padding: '8px 0', background: 'transparent',
               border: '1px solid #e2e8f0', borderRadius: '8px',
@@ -130,7 +131,7 @@ function ProductCard({ product, onAdd, onView, inCart }) {
   );
 }
 
-function TreeView({ products, onView, onAdd, cart }) {
+function TreeView({ products, onNavigate, onAdd, cart }) {
   const families = products.reduce((acc, p) => {
     const fam = p.family || 'Other';
     if (!acc[fam]) acc[fam] = [];
@@ -162,7 +163,7 @@ function TreeView({ products, onView, onAdd, cart }) {
                       borderRadius: '12px', padding: '14px', minWidth: '160px', maxWidth: '180px',
                       transition: 'all 0.2s', cursor: 'pointer', position: 'relative',
                     }}
-                    onClick={() => onView(product)}
+                    onClick={() => onNavigate(product)}
                     onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(59,130,246,0.15)'; e.currentTarget.style.borderColor = '#3b82f6'; }}
                     onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = inCart ? '#3b82f6' : '#e8eaf0'; }}
                   >
@@ -195,56 +196,14 @@ function TreeView({ products, onView, onAdd, cart }) {
   );
 }
 
-function ProductModal({ product, onClose, onAdd, inCart }) {
-  if (!product) return null;
-  const finalPrice = product.onSpecial ? (product.cost * (1 - product.discount)).toFixed(2) : Number(product.cost).toFixed(2);
-  return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }} onClick={onClose}>
-      <div style={{ background: '#fff', borderRadius: '16px', maxWidth: '520px', width: '100%', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
-        <div style={{ height: '180px', background: product.onSpecial ? 'linear-gradient(135deg,#fef9ec,#fde68a)' : 'linear-gradient(135deg,#eff6ff,#dbeafe)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          <div style={{ width: '64px', height: '64px', background: '#fff', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-            <FamilyIcon family={product.family} />
-          </div>
-          <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '8px', width: '32px', height: '32px', cursor: 'pointer', fontSize: '18px', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-        </div>
-        <div style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
-            {product.family && <span style={{ background: '#f0f4ff', color: '#3b82f6', fontSize: '11px', fontWeight: '600', padding: '3px 8px', borderRadius: '6px' }}>{product.family}</span>}
-            {product.brand && <span style={{ background: '#f8fafc', color: '#64748b', fontSize: '11px', fontWeight: '500', padding: '3px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>{product.brand}</span>}
-            {product.onSpecial && <span style={{ background: '#fef3c7', color: '#d97706', fontSize: '11px', fontWeight: '600', padding: '3px 8px', borderRadius: '6px' }}>On Special</span>}
-          </div>
-          <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#0f172a', margin: '0 0 8px' }}>{product.name}</h2>
-          <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 20px', lineHeight: '1.6' }}>{product.description || 'No description provided.'}</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-            {[
-              { label: 'Price', value: `$${finalPrice}` },
-              { label: 'Original', value: product.onSpecial ? `$${Number(product.cost).toFixed(2)}` : '—' },
-              { label: 'Tier', value: `Tier ${product.productTier || 1}` },
-              { label: 'Product ID', value: product.productId },
-            ].map(item => (
-              <div key={item.label} style={{ background: '#f8fafc', borderRadius: '10px', padding: '12px 14px' }}>
-                <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500', marginBottom: '3px' }}>{item.label}</div>
-                <div style={{ fontSize: '15px', fontWeight: '600', color: '#0f172a' }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => { onAdd(product); onClose(); }}
-            style={{ width: '100%', padding: '13px', background: inCart ? '#dcfce7' : '#2563eb', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600', color: inCart ? '#16a34a' : '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          ><CartIcon />{inCart ? 'Already in cart' : 'Add to cart'}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function Sidebar({ navigate }) {
   const role = localStorage.getItem('role');
   const navItems = role === 'seller'
     ? [
         { label: 'Dashboard', path: '/seller/dashboard', icon: '▦' },
-        { label: 'My Products', path: '/products', icon: '◫', active: true },
+        { label: 'My Products', path: '/seller/products', icon: '◫' },
         { label: 'Orders', path: '/orders', icon: '◨' },
+        { label: 'Browse Catalog', path: '/products', icon: '🔍', active: true },
       ]
     : [
         { label: 'Dashboard', path: '/buyer/dashboard', icon: '▦' },
@@ -298,26 +257,29 @@ export default function ProductsPage() {
   const [selectedFamilies, setSelectedFamilies] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState('');
   const [onSpecialOnly, setOnSpecialOnly] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [cartPulse, setCartPulse] = useState(false);
   const [cart, setCart] = useState(() => {
-    try { 
-      return JSON.parse(localStorage.getItem('cart') || '[]'); 
+    try {
+      return JSON.parse(localStorage.getItem('cart') || '[]');
     } catch { return []; }
   });
 
   const handleAddToCart = (product) => {
     const updatedCart = [...cart];
     const itemIndex = updatedCart.findIndex(item => item.productId === product.productId);
-
     if (itemIndex > -1) {
       updatedCart[itemIndex].qty += 1;
     } else {
       updatedCart.push({ ...product, qty: 1 });
     }
-
     setCart(updatedCart);
     localStorage.setItem('cart', JSON.stringify(updatedCart));
+    setCartPulse(true);
+    setTimeout(() => setCartPulse(false), 400);
+  };
+
+  const handleNavigateToProduct = (product) => {
+    navigate(`/products/${product.productId}`);
   };
 
   useEffect(() => {
@@ -376,49 +338,71 @@ export default function ProductsPage() {
       <Sidebar navigate={navigate} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+
+        {/* ── Top bar ── */}
         <header style={{ background: '#fff', borderBottom: '1px solid #e8eaf0', padding: '0 28px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Products</div>
             <div style={{ fontSize: '11px', color: '#94a3b8' }}>Explore catalog</div>
           </div>
+
+          {/* Search */}
           <div style={{ flex: 1, maxWidth: '480px', margin: '0 32px', position: 'relative' }}>
             <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}><SearchIcon /></div>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products, suppliers, SKUs..."
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search products, suppliers, SKUs..."
               style={{ width: '100%', padding: '9px 12px 9px 38px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', background: '#f8fafc', outline: 'none', boxSizing: 'border-box' }}
               onFocus={e => e.currentTarget.style.borderColor = '#3b82f6'}
               onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button 
-              onClick={() => navigate('/cart')} 
-              style={{ position: 'relative', cursor: 'pointer', /* your other styles */ }}
+
+          {/* Right actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Cart button */}
+            <button
+              onClick={() => navigate('/cart')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '7px',
+                padding: '8px 14px',
+                background: cart.length ? '#eff6ff' : '#f8fafc',
+                border: `1px solid ${cart.length ? '#bfdbfe' : '#e2e8f0'}`,
+                borderRadius: '9px', fontSize: '13px', fontWeight: '600',
+                color: cart.length ? '#2563eb' : '#64748b',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                transform: cartPulse ? 'scale(1.08)' : 'scale(1)',
+              }}
             >
               <CartIcon />
+              Cart
               {cart.length > 0 && (
-                <span style={{ 
-                  position: 'absolute', top: '-8px', right: '-8px', 
-                  background: '#ef4444', color: 'white', borderRadius: '50%', 
-                  padding: '2px 6px', fontSize: '10px', fontWeight: 'bold' 
-                }}>
+                <span style={{ background: '#2563eb', color: '#fff', borderRadius: '10px', fontSize: '11px', fontWeight: '700', padding: '1px 6px' }}>
                   {cart.length}
                 </span>
               )}
             </button>
-            <button onClick={() => { 
-              localStorage.clear(); 
-              // This forces a full browser refresh so all React states reset
-              window.location.href = '/login'; 
-                  }} 
+
+            {/* Logout */}
+            <button
+              onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
               title="Logout"
               style={{ width: '36px', height: '36px', background: '#f1f5f9', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
+              onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
             </button>
           </div>
         </header>
 
         <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+
+          {/* ── Filter sidebar ── */}
           <div style={{ width: '240px', flexShrink: 0, background: '#fff', borderRight: '1px solid #e8eaf0', padding: '20px', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>Filters</span>
@@ -441,7 +425,9 @@ export default function ProductsPage() {
             {brands.length > 0 && (
               <div style={{ marginBottom: '20px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', letterSpacing: '0.6px', marginBottom: '10px' }}>SUPPLIER</div>
-                <select value={selectedBrand} onChange={e => setSelectedBrand(e.target.value)}
+                <select
+                  value={selectedBrand}
+                  onChange={e => setSelectedBrand(e.target.value)}
                   style={{ width: '100%', padding: '8px 10px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '12px', color: '#374151', background: '#fff', cursor: 'pointer', outline: 'none' }}
                 >
                   <option value="">All suppliers</option>
@@ -459,6 +445,7 @@ export default function ProductsPage() {
             </div>
           </div>
 
+          {/* ── Main content ── */}
           <main style={{ flex: 1, padding: '28px', overflowY: 'auto', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
               <div>
@@ -480,6 +467,7 @@ export default function ProductsPage() {
 
             {viewMode === 'grid' ? (
               <>
+                {/* On Special section */}
                 {specialProducts.length > 0 && (
                   <section style={{ marginBottom: '36px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -493,16 +481,20 @@ export default function ProductsPage() {
                       </span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
-                      {specialProducts.map(p => <ProductCard 
-                                                  key={p.productId} 
-                                                  product={p} 
-                                                  onAdd={handleAddToCart}
-                                                  onView={(prod) => navigate(`/products/${prod.productId}`)} 
-                                                  inCart={cart.some(c => c.productId === p.productId)}
-                                                />)}
+                      {specialProducts.map(p => (
+                        <ProductCard
+                          key={p.productId}
+                          product={p}
+                          onAdd={handleAddToCart}
+                          onNavigate={handleNavigateToProduct}
+                          inCart={cart.some(c => c.productId === p.productId)}
+                        />
+                      ))}
                     </div>
                   </section>
                 )}
+
+                {/* All Products section */}
                 <section>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <div>
@@ -520,7 +512,15 @@ export default function ProductsPage() {
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: '16px' }}>
-                      {filteredProducts.map(p => <ProductCard key={p.productId} product={p} onAdd={handleAddToCart} onView={setSelectedProduct} inCart={cart.some(c => c.productId === p.productId)} />)}
+                      {filteredProducts.map(p => (
+                        <ProductCard
+                          key={p.productId}
+                          product={p}
+                          onAdd={handleAddToCart}
+                          onNavigate={handleNavigateToProduct}
+                          inCart={cart.some(c => c.productId === p.productId)}
+                        />
+                      ))}
                     </div>
                   )}
                 </section>
@@ -531,14 +531,17 @@ export default function ProductsPage() {
                   <h2 style={{ fontSize: '17px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>Tree View</h2>
                   <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>Products grouped by family. Lines connect items in the same product line.</p>
                 </div>
-                <TreeView products={filteredProducts} onView={setSelectedProduct} onAdd={handleAddToCart} cart={cart} />
+                <TreeView
+                  products={filteredProducts}
+                  onNavigate={handleNavigateToProduct}
+                  onAdd={handleAddToCart}
+                  cart={cart}
+                />
               </div>
             )}
           </main>
         </div>
       </div>
-
-      <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onAdd={handleAddToCart} inCart={selectedProduct ? cart.some(c => c.productId === selectedProduct.productId) : false} />
     </div>
   );
 }
