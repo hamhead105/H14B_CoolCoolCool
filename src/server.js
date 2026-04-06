@@ -8,6 +8,7 @@ import docsRoutes from './routes/docs.js';
 import buyerRoutes from './routes/buyers.js'
 import sellerRoutes from './routes/sellers.js'
 import ratingRoutes from './routes/ratings.js';
+import specialsRoutes from './routes/specials.js';
 
 
 const app = express();
@@ -22,6 +23,7 @@ app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
 app.use('/buyers', buyerRoutes);
 app.use('/sellers', sellerRoutes);
+app.use('/specials', specialsRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
