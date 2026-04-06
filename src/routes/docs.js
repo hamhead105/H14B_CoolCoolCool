@@ -27,7 +27,13 @@ const swaggerDefinition = {
 
 const options = {
   swaggerDefinition,
-  apis: [path.join(__dirname, './orders.js'), path.join(__dirname, './health.js'), path.join(__dirname, './ratings.js')]
+  apis: [
+    path.join(__dirname, './orders.js'),
+    path.join(__dirname, './health.js'),
+    path.join(__dirname, './buyers.js'),
+    path.join(__dirname, './sellers.js'),
+    path.join(__dirname, './products.js')
+  ]
 };
 
 const swaggerSpec = swaggerJSDoc(options);
