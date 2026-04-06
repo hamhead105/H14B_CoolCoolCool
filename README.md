@@ -36,6 +36,8 @@ npm test
 
 ## Frontend
 - Orders page: `http://localhost:3000/orders.html` (login, view orders, preview UBL XML, send via email)
+| POST | /orders/:id/rating | Submit a rating (1–5) for an order |
+| GET | /orders/:id/rating | Retrieve the rating for an order |
 
 ## Swagger Documentation
 - Production url: https://h14-b-cool-cool-cool.vercel.app/api-docs

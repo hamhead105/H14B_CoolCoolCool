@@ -10,6 +10,7 @@ import docsRoutes from './routes/docs.js';
 import buyerRoutes from './routes/buyers.js'
 import sellerRoutes from './routes/sellers.js'
 import emailRoutes from './routes/email.js';
+import ratingRoutes from './routes/ratings.js';
 import specialsRoutes from './routes/specials.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/orders', orderRoutes);
 app.use('/orders', emailRoutes);
+app.use('/orders', ratingRoutes);
 app.use('/products', productRoutes);
 app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
