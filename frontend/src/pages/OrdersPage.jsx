@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import Spline from '@splinetool/react-spline';
 import Sidebar from '../components/Sidebar';
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
+const SPLINE_SCENE = "https://prod.spline.design/5TLD-UnzZT3azicG/scene.splinecode";
 
 // ── Icons ─────────────────────────────────────────────────────
 const IcOrders = () => (
@@ -40,6 +42,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [splineLoaded, setSplineLoaded] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -109,8 +112,26 @@ export default function OrdersPage() {
       <Sidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
-        {/* ── Background Effects ── */}
-        <div style={{ position: 'fixed', inset: 0, left: '254px', zIndex: 0, pointerEvents: 'none' }}>
+        
+        {/* ── Spline Background (Flipped Horizontally) ── */}
+        <div style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            left: '410px', 
+            zIndex: 0, 
+            pointerEvents: 'none',
+            opacity: splineLoaded ? 0.6 : 0,
+            transition: 'opacity 1.5s ease-in-out',
+            transform: 'scale(1.2) translateY(50px) scaleX(-1)'
+        }}>
+          <Spline 
+            scene={SPLINE_SCENE} 
+            onLoad={() => setSplineLoaded(true)}
+          />
+        </div>
+
+        {/* ── Background Grid ── */}
+        <div style={{ position: 'fixed', inset: 0, left: '254px', zIndex: 1, pointerEvents: 'none' }}>
             <div style={{ position: 'absolute', inset: 0, backgroundImage: `linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
             <div style={{ position: 'absolute', top: '-10%', right: '10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)' }} />
         </div>
@@ -129,7 +150,7 @@ export default function OrdersPage() {
           </div>
         </header>
 
-        <main style={{ flex: 1, padding: '40px', overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+        <main style={{ flex: 1, padding: '40px', overflowY: 'auto', position: 'relative', zIndex: 5 }}>
           
           {/* ── Tabs ── */}
           <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '4px', borderRadius: '12px', width: 'fit-content', marginBottom: '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -146,7 +167,7 @@ export default function OrdersPage() {
           </div>
 
           {/* ── Table Container ── */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', overflow: 'hidden', backdropFilter: 'blur(24px)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
