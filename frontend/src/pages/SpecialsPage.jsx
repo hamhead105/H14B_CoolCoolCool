@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
-
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
+import { API_BASE } from '../apiConfig.js';
 
 export default function SpecialsPage() {
   const navigate = useNavigate();

@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
-
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
+import { API_BASE } from '../apiConfig.js';
 
 function getCart() {
   try { return JSON.parse(localStorage.getItem('cart') || '[]'); } catch { return []; }

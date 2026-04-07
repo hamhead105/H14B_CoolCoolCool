@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import { API_BASE } from '../apiConfig.js';
 
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 const EMPTY_FORM = { name: '', brand: '', family: '', description: '', cost: '', productTier: 1, onSpecial: false, discount: '' };
 
 function Modal({ title, children, onClose }) {

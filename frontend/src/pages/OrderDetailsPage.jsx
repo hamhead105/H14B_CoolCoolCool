@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
+import { API_BASE } from '../apiConfig.js';
 
 export default function OrderDetailsPage() {
   const { orderId } = useParams();

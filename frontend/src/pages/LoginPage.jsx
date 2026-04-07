@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
+import { API_BASE } from '../apiConfig.js';
 
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 const SPLINE_URL = 'https://prod.spline.design/JEgENMw8qsjdXOd9/scene.splinecode';
 
 export default function LoginPage() {

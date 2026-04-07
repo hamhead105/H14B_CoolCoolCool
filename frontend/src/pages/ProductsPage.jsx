@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, useInView, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
 import Sidebar from '../components/Sidebar';
+import { API_BASE } from '../apiConfig.js';
 
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 const SPLINE_URL = 'https://prod.spline.design/uuHgNblqFyjBE7WO/scene.splinecode';
 
 // ── Family icons ──────────────────────────────────────────────

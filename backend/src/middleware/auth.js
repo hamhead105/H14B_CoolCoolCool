@@ -9,6 +9,10 @@ export function authMiddleware(req, res, next) {
   }
   // REMOVE ENDS HERE
 
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ error: 'Server configuration error: JWT_SECRET is not defined' });
+  }
+
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
 
