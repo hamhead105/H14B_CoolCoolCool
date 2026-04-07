@@ -2,6 +2,15 @@ import prisma from '../prisma.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
+function getJwtSecret() {
+  if (!process.env.JWT_SECRET) {
+    const err = new Error('Server configuration error: JWT_SECRET is not defined');
+    err.code = 'MISSING_JWT_SECRET';
+    throw err;
+  }
+  return process.env.JWT_SECRET;
+}
+
 // BUYER 
 
 export async function registerBuyer(data) {
@@ -21,7 +30,7 @@ export async function registerBuyer(data) {
 
   const token = jwt.sign(
     { buyerId: buyer.buyerId, role: 'buyer' },
-    process.env.JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 
@@ -45,7 +54,7 @@ export async function loginBuyer({ email, password }) {
 
   const token = jwt.sign(
     { buyerId: buyer.buyerId, role: 'buyer' },
-    process.env.JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 
@@ -112,7 +121,7 @@ export async function registerSeller(data) {
 
   const token = jwt.sign(
     { sellerId: seller.sellerId, role: 'seller' },
-    process.env.JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 
@@ -136,7 +145,7 @@ export async function loginSeller({ email, password }) {
 
   const token = jwt.sign(
     { sellerId: seller.sellerId, role: 'seller' },
-    process.env.JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
 import Sidebar from '../components/Sidebar';
+import { API_BASE } from '../apiConfig.js';
 
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
 const SPLINE_SCENE = "https://prod.spline.design/5TLD-UnzZT3azicG/scene.splinecode";
 
 // ── Icons ─────────────────────────────────────────────────────

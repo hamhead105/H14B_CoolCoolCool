@@ -7,8 +7,8 @@ import orderRoutes from './routes/orders.js';
 import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
 import docsRoutes from './routes/docs.js';
-import buyerRoutes from './routes/buyers.js'
-import sellerRoutes from './routes/sellers.js'
+import buyerRoutes from './routes/buyers.js';
+import sellerRoutes from './routes/sellers.js';;;
 import emailRoutes from './routes/email.js';
 import ratingRoutes from './routes/ratings.js';
 

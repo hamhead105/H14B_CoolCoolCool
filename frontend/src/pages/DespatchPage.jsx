@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-
-const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
+import { API_BASE } from '../apiConfig.js';
 
 function generateUBLInvoice(order, seller) {
   const lines = (order.items || []).map((item, idx) => `
