@@ -21,14 +21,14 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.use('/orders', orderRoutes);
-app.use('/orders', emailRoutes);
-app.use('/orders', ratingRoutes);
-app.use('/products', productRoutes);
-app.use('/health', healthRoutes);
-app.use('/api-docs', docsRoutes);
-app.use('/buyers', buyerRoutes);
-app.use('/sellers', sellerRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/orders', emailRoutes);
+app.use('/api/orders', ratingRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api/api-docs', docsRoutes);
+app.use('/api/buyers', buyerRoutes);
+app.use('/api/sellers', sellerRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {

@@ -44,7 +44,7 @@ let url;
 beforeAll((done) => {
   server = app.listen(0, () => {
     const port = server.address().port;
-    url = `http://localhost:${port}`;
+    url = `http://localhost:${port}/api`;
     done();
   });
 });
