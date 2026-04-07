@@ -102,6 +102,32 @@ export default function CartPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order failed');
 
+      const uniqueSellerIds = [...new Set(cart.map(item => item.sellerId))];
+
+      uniqueSellerIds.forEach(async (sId) => {
+        try {
+          const sellerRes = await fetch(`${API_BASE}/sellers/${sId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const sellerData = await sellerRes.json();
+          const targetEmail = sellerData.supportEmail || sellerData.email;
+
+          if (targetEmail) {
+            await fetch(`${API_BASE}/orders/${data.orderId}/email`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+              },
+              body: JSON.stringify({ recipientEmail: targetEmail })
+            });
+            console.log(`Dispatched UBL to Seller ${sId} at ${targetEmail}`);
+          }
+        } catch (err) {
+          console.error(`Failed to email seller ${sId}:`, err);
+        }
+      });
+
       setUblXml(data.ublDocument);
       setOrderPlaced(true);
       localStorage.removeItem('cart');

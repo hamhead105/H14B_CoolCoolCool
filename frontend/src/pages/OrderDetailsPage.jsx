@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import { API_BASE } from '../apiConfig.js';
+import { AnimatePresence } from 'framer-motion';
 
 export default function OrderDetailsPage() {
   const { orderId } = useParams();
@@ -16,7 +17,11 @@ export default function OrderDetailsPage() {
   const [ratingComment, setRatingComment] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  
+  const [forwardEmail, setForwardEmail] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
   const role = localStorage.getItem('role');
   const currentSellerId = localStorage.getItem('sellerId');
 
@@ -44,6 +49,41 @@ export default function OrderDetailsPage() {
         .catch(() => setRating(null));
     }
   }, [orderId, order]);
+
+  const handleForwardXML = async () => {
+    if (!forwardEmail || !forwardEmail.includes('@')) {
+      setToastMsg('Invalid email destination.');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/orders/${orderId}/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ recipientEmail: forwardEmail })
+      });
+
+      if (res.ok) {
+        setToastMsg('UBL XML dispatched successfully!');
+        setForwardEmail('');
+      } else {
+        // Check if the backend specifically failed due to SMTP config
+        const data = await res.json();
+        setToastMsg(data.error || 'Failed to route document.');
+      }
+    } catch (e) {
+      setToastMsg('Network error. Check your uplink.');
+    } finally {
+      setSendingEmail(false);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
 
   const handleStatusChange = async (newStatus) => {
     if (updatingStatus) return;
@@ -329,6 +369,22 @@ export default function OrderDetailsPage() {
           <div style={{ background: '#0a0f1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <span style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.3)' }}>DEVELOPER PAYLOAD</span>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'left' }}>
+                <input 
+                  type="email" 
+                  placeholder="Forward to email..." 
+                  value={forwardEmail}
+                  onChange={e => setForwardEmail(e.target.value)}
+                  style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '4px 10px', color: '#fff', fontSize: '11px', outline: 'none' }}
+                />
+                <button 
+                  onClick={handleForwardXML} 
+                  disabled={sendingEmail}
+                  style={{ padding: '4px 12px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: '700' }}
+                >
+                  {sendingEmail ? 'SENDING...' : 'SEND XML'}
+                </button>
+              </div>
               <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.4)', padding: '4px', borderRadius: '8px' }}>
                 <button onClick={() => setDevView('xml')} style={{ padding: '4px 12px', background: devView === 'xml' ? 'rgba(255,255,255,0.1)' : 'transparent', color: devView === 'xml' ? '#fff' : '#555', border: 'none', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: '700' }}>UBL XML</button>
                 <button onClick={() => setDevView('json')} style={{ padding: '4px 12px', background: devView === 'json' ? 'rgba(255,255,255,0.1)' : 'transparent', color: devView === 'json' ? '#fff' : '#555', border: 'none', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: '700' }}>RAW JSON</button>
@@ -347,6 +403,25 @@ export default function OrderDetailsPage() {
 
         </main>
       </div>
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+            style={{
+              position: 'fixed', bottom: '40px', right: '40px', zIndex: 1000,
+              background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(96, 165, 250, 0.3)', borderRadius: '16px',
+              padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '12px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 20px rgba(96, 165, 250, 0.1)'
+            }}
+          >
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#60a5fa', boxShadow: '0 0 10px #60a5fa' }} />
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#fff' }}>{toastMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

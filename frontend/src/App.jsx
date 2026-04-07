@@ -15,7 +15,7 @@ import CartPage from './pages/CartPage';
 import BuyerOrdersPage from './pages/BuyerOrdersPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 import OrdersPage from './pages/OrdersPage';
-import DespatchPage from './pages/DespatchPage';
+import SettingsPage from './pages/SettingsPage';
 
 // ── Auth helpers ─────────────────────────────────────────────
 export function getToken() { return localStorage.getItem('token'); }
@@ -44,6 +44,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
 
         {/* Buyer */}
         <Route path="/buyer/dashboard" element={
@@ -74,9 +75,6 @@ export default function App() {
         } />
         <Route path="/orders" element={
           <ProtectedRoute requiredRole="seller"><OrdersPage /></ProtectedRoute>
-        } />
-        <Route path="/orders/:id/despatch" element={
-          <ProtectedRoute requiredRole="seller"><DespatchPage /></ProtectedRoute>
         } />
         <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
         {/* Catch-all */}
