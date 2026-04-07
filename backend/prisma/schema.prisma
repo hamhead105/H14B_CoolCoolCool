@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Buyer {
+  buyerId       Int      @id @default(autoincrement())
+  name          String
+  email         String   @unique
+  password      String
+  street        String
+  city          String
+  postalCode    String
+  countryCode   String
+  companyId     String?
+  taxSchemeId   String?
+  contactPhone  String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  orders        Order[]
+}
+
+model Seller {
+  sellerId      Int      @id @default(autoincrement())
+  name          String
+  email         String   @unique
+  password      String
+  street        String
+  city          String
+  postalCode    String
+  countryCode   String
+  companyId     String
+  legalEntityId String
+  taxSchemeId   String
+  contactName   String
+  contactPhone  String
+  contactEmail  String
+  createdAt     DateTime @default(now())
+  products      Product[] 
+}
+
+model Order {
+  orderId                  String   @id
+  buyerId                  Int?
+  buyer                    Buyer?   @relation(fields: [buyerId], references: [buyerId])
+  status                   String
+  inputData                Json
+  totalCost                Float
+  taxAmount                Float
+  payableAmount            Float
+  anticipatedMonetaryTotal Float
+  loyaltyPointsEarned      Int      @default(0)
+  loyaltyPointsRedeemed    Int      @default(0)
+  ratingScore              Int?
+  ratingComment            String?
+  createdAt                DateTime @default(now())
+}
+
+model Product {
+  productId    String    @id
+  name         String
+  description  String
+  cost         Float
+  brand        String
+  family       String
+  onSpecial    Boolean
+  discount     Float
+  productTier  Int
+  nextProduct  String
+  releaseDate  DateTime  @default(now())
+  sellerId     Int
+  seller       Seller    @relation(fields: [sellerId], references: [sellerId])
+}

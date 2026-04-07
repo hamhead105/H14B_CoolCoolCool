@@ -1,14 +1,13 @@
 {
   "name": "h14b_coolcoolcool",
-  "version": "1.0.0",
-  "description": "Minimal Express API with Swagger UI",
-  "main": "src/server.js",
-  "type": "module",
+  "version": "2",
+  "description": "Order Creation API that generates UBL 2.1 XML documents from structured JSON input. \r Built as part of a SaaS ecosystem for digital trade document exchange.",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --passWithNoTests --coverage",
-    "postinstall": "prisma generate"
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm start --prefix frontend",
+    "test": "npm test --prefix backend"
   },
   "keywords": [
     "express",
@@ -18,21 +17,37 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@splinetool/react-spline": "^4.1.0",
     "@supabase/supabase-js": "^2.99.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^4.21.2",
+    "framer-motion": "^12.38.0",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^8.0.4",
     "prisma": "^5.22.0",
+    "react-router-dom": "^7.14.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
-  "devDependencies": {
-    "jest": "^30.2.0"
+  "author": "",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hamhead105/H14B_CoolCoolCool/issues"
   },
-  "jest": {
-    "testEnvironment": "node"
-  }
+  "homepage": "https://github.com/hamhead105/H14B_CoolCoolCool#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/backend/src/server.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/$1"
+    }
+  ]
 }
