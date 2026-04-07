@@ -40,7 +40,7 @@ export default function CartPage() {
   const handleOrder = async () => {
     const token = localStorage.getItem('token');
     const buyerId = localStorage.getItem('buyerId');
-
+  
     if (!token || !buyerId) {
       alert("Authentication missing. Please log in.");
       return;
@@ -51,10 +51,9 @@ export default function CartPage() {
       const profileRes = await fetch(`${API_BASE}/buyers/${buyerId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       if (!profileRes.ok) throw new Error("Failed to retrieve buyer profile.");
       const dbBuyer = await profileRes.json();
-
+  
       const buyerData = {
         buyerId: buyerId,
         name: dbBuyer.businessName || dbBuyer.name || "NOT-PROVIDED",
@@ -70,7 +69,38 @@ export default function CartPage() {
         contactPhone: dbBuyer.phone || dbBuyer.contactPhone || "NOT-PROVIDED",
         contactEmail: dbBuyer.contactEmail || dbBuyer.email || "NOT-PROVIDED",
       };
-
+  
+      const uniqueSellerIds = [...new Set(cart.map(item => String(item.sellerId)))];
+      let sellerDataPayload = { 
+        name: "Multiple Sellers", 
+        street: "Multi", city: "Multi", postalCode: "0000", countryCode: "AU", 
+        companyId: "N/A", taxSchemeId: "GST", legalEntityId: "N/A", 
+        contactName: "N/A", contactPhone: "N/A", contactEmail: "N/A" 
+      };
+  
+      if (uniqueSellerIds.length === 1) {
+        const sId = uniqueSellerIds[0];
+        const sRes = await fetch(`${API_BASE}/sellers/${sId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (sRes.ok) {
+          const sDb = await sRes.json();
+          sellerDataPayload = {
+            name: sDb.businessName || sDb.name,
+            street: sDb.street || "NOT-PROVIDED",
+            city: sDb.city || "NOT-PROVIDED",
+            postalCode: sDb.postalCode || "0000",
+            countryCode: sDb.countryCode || "AU",
+            companyId: sDb.companyId || "NOT-PROVIDED",
+            taxSchemeId: sDb.taxSchemeId || "GST",
+            legalEntityId: sDb.legalEntityId || "NOT-PROVIDED",
+            contactName: sDb.contactName || sDb.name,
+            contactPhone: sDb.contactPhone || "NOT-PROVIDED",
+            contactEmail: sDb.contactEmail || sDb.email || "NOT-PROVIDED"
+          };
+        }
+      }
+  
       const orderPayload = {
         buyerId: buyerId,
         order: { 
@@ -80,8 +110,15 @@ export default function CartPage() {
           note: "Standard B2B Order"
         },
         buyer: buyerData,
-        seller: { name: "Multiple Sellers", street: "Multi", city: "Multi", postalCode: "0000", countryCode: "AU", companyId: "N/A", taxSchemeId: "GST", legalEntityId: "N/A", contactName: "N/A", contactPhone: "N/A", contactEmail: "N/A" },
-        delivery: { street: buyerData.street, city: buyerData.city, postalCode: buyerData.postalCode, countryCode: buyerData.countryCode, requestedStartDate: new Date().toISOString().split('T')[0], requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] },
+        seller: sellerDataPayload,
+        delivery: { 
+          street: buyerData.street, 
+          city: buyerData.city, 
+          postalCode: buyerData.postalCode, 
+          countryCode: buyerData.countryCode, 
+          requestedStartDate: new Date().toISOString().split('T')[0], 
+          requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] 
+        },
         tax: { taxPercent: 10, taxTypeCode: "GST" },
         items: cart.map((item, idx) => ({
           id: (idx + 1).toString(),
@@ -92,26 +129,24 @@ export default function CartPage() {
           sellerId: String(item.sellerId) 
         }))
       };
-
+  
       const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(orderPayload)
       });
-
+  
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order failed');
-
-      const uniqueSellerIds = [...new Set(cart.map(item => item.sellerId))];
-
+  
       uniqueSellerIds.forEach(async (sId) => {
         try {
           const sellerRes = await fetch(`${API_BASE}/sellers/${sId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          const sellerData = await sellerRes.json();
-          const targetEmail = sellerData.supportEmail || sellerData.email;
-
+          const sInfo = await sellerRes.json();
+          const targetEmail = sInfo.contactEmail || sInfo.email;
+  
           if (targetEmail) {
             await fetch(`${API_BASE}/orders/${data.orderId}/email`, {
               method: 'POST',
@@ -121,13 +156,13 @@ export default function CartPage() {
               },
               body: JSON.stringify({ recipientEmail: targetEmail })
             });
-            console.log(`Dispatched UBL to Seller ${sId} at ${targetEmail}`);
+            console.log(`UBL dispatched to ${targetEmail}`);
           }
         } catch (err) {
-          console.error(`Failed to email seller ${sId}:`, err);
+          console.error(`Email failed for ${sId}:`, err);
         }
       });
-
+  
       setUblXml(data.ublDocument);
       setOrderPlaced(true);
       localStorage.removeItem('cart');
