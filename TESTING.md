@@ -15,12 +15,12 @@ npm run dev  # uses nodemon for auto-reload on file changes
 cd frontend
 npm install  # if not already done
 npm start
-# Frontend will run on http://localhost:3000 (React's default)
+# Frontend will run on http://localhost:3001 (uses next available port after backend takes 3000)
 # The .env.local file automatically sets REACT_APP_API_BASE=http://localhost:3000
 ```
 
 ### 3. Test the Login Flow
-- Open **http://localhost:3000** in your browser
+- Open **http://localhost:3001** in your browser
 - Try logging in with test credentials
 - Frontend will send requests to `http://localhost:3000/buyers/login` ✓
 - Check browser Console (F12) for any errors
