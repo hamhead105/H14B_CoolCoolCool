@@ -17,27 +17,15 @@
       "dest": "/frontend/static/$1"
     },
     {
-      "src": "/favicon.ico",
-      "dest": "/frontend/favicon.ico"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/frontend/manifest.json"
-    },
-    {
-      "src": "/asset-manifest.json",
-      "dest": "/frontend/asset-manifest.json"
-    },
-    {
-      "src": "/robots.txt",
-      "dest": "/frontend/robots.txt"
-    },
-    {
-      "src": "/(.*\\..*)",
+      "src": "/(favicon.ico|manifest.json|asset-manifest.json|robots.txt)",
       "dest": "/frontend/$1"
     },
     {
-      "src": "^/(buyers|sellers|orders|products|health|api-docs)(.*)$",
+      "src": "/(.*\\.(js|css|png|jpg|svg|json))",
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/(buyers|sellers|orders|products|health|api-docs)(.*)",
       "dest": "/backend/src/server.js"
     },
     {
