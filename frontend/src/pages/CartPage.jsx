@@ -124,18 +124,39 @@ export default function CartPage() {
   if (orderPlaced) return (
     <div style={{ display: 'flex', height: '100vh', background: '#050d1a', fontFamily: "'Geist', sans-serif" }}>
       <Sidebar />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
+      {/* ADDED: overflowY: 'auto' so the main wrapper can scroll on tiny screens */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', overflowY: 'auto' }}>
+        
+        {/* ADDED: margin: 'auto' to work safely with overflow */}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '48px', maxWidth: '540px', textAlign: 'center', backdropFilter: 'blur(20px)' }}>
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '48px', maxWidth: '640px', width: '100%', textAlign: 'center', backdropFilter: 'blur(20px)', margin: 'auto' }}>
+          
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>✅</div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginBottom: '12px', fontFamily: "'Bricolage Grotesque', sans-serif" }}>Order Placed!</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '32px', lineHeight: '1.6' }}>Your UBL-compliant purchase order has been generated and broadcasted to suppliers.</p>
+          
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button onClick={downloadUBL} style={{ padding: '12px 24px', background: '#3b82f6', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>Download UBL XML</button>
             <button onClick={() => setShowUbl(!showUbl)} style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>{showUbl ? 'Hide' : 'View'} XML</button>
           </div>
+          
           {showUbl && (
-            <pre style={{ marginTop: '24px', background: '#000', padding: '20px', borderRadius: '12px', fontSize: '11px', color: '#a78bfa', textAlign: 'left', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{ublXml}</pre>
+            <pre style={{ 
+              marginTop: '24px', 
+              background: '#000', 
+              padding: '20px', 
+              borderRadius: '12px', 
+              fontSize: '11px', 
+              color: '#a78bfa', 
+              textAlign: 'left', 
+              overflowX: 'auto', 
+              overflowY: 'auto', 
+              maxHeight: '350px', 
+              whiteSpace: 'pre-wrap', 
+              wordBreak: 'break-all' 
+            }}>
+              {ublXml}
+            </pre>
           )}
         </motion.div>
       </div>

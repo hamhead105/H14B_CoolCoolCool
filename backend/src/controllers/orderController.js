@@ -40,7 +40,7 @@ export async function postOrder(req, res) {
         buyerId: parseInt(buyerId, 10),
         status: 'order placed',
         inputData: enrichedBody,
-        totalCost: taxAmount + payableAmount,
+        totalCost: payableAmount,
         taxAmount,
         payableAmount,
         anticipatedMonetaryTotal: lineExtensionAmount,
@@ -72,7 +72,7 @@ export async function postOrder(req, res) {
     return res.status(200).json({
       orderId: order.id,
       status: 'order placed',
-      totalCost: taxAmount + payableAmount,
+      totalCost: payableAmount,
       taxAmount,
       payableAmount,
       anticipatedMonetaryTotal: lineExtensionAmount,
@@ -185,7 +185,7 @@ export async function putOrder(req, res) {
     await updateOrder(orderId, {
       status: globalStatus,
       inputData: mergedInput,
-      totalCost: taxAmount + payableAmount,
+      totalCost: payableAmount,
       taxAmount,
       payableAmount,
       anticipatedMonetaryTotal: getLineExtension(mergedInput),
@@ -194,7 +194,7 @@ export async function putOrder(req, res) {
     return res.status(200).json({
       orderId,
       status: globalStatus,
-      totalCost: taxAmount + payableAmount,
+      totalCost: payableAmount,
       inputData: { ...mergedInput, ublDocument: xml_output }
     });
   } catch (error) {

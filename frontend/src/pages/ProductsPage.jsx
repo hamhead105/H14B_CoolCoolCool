@@ -213,92 +213,293 @@ function ProductCard({ product, onAdd, onNavigate, inCart, index }) {
   );
 }
 
-// ── Tree view ─────────────────────────────────────────────────
+// ── DROP-IN REPLACEMENT ────────────────────────────────────────────────────
+// In ProductsPage.jsx, replace the entire TreeView function with the code below.
+// Also add useState import if not already there (it's already imported in your file).
+// ──────────────────────────────────────────────────────────────────────────────
+//
+// Layout logic:
+//   - Products in same family, grouped by tier
+//   - Tier 1 cards sit side by side horizontally
+//   - Tier 2 cards sit below their matching tier-1 card (by index)
+//   - Tier 3 cards sit below their matching tier-2 card
+//   - Vertical connector lines join parent bottom-center → child top-center
+//   - Horizontal connector line joins tier-1 siblings at mid-height
+//   - No arrowheads — clean straight lines only
+// ──────────────────────────────────────────────────────────────────────────────
+
+const CARD_W = 160;
+const CARD_H = 128;
+const H_GAP  = 28;   // gap between sibling cards in same tier
+const V_GAP  = 52;   // gap between tier rows
+
+// ── Single tree card node ─────────────────────────────────────────────────
+function TreeNode({ product, inCart, onNavigate, onAdd, tier, animDelay }) {
+  const [hovered, setHovered] = useState(false);
+  const finalPrice = product.onSpecial
+    ? (product.cost * (1 - product.discount)).toFixed(2)
+    : Number(product.cost).toFixed(2);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.88 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: animDelay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onNavigate(product)}
+      style={{
+        width: CARD_W, height: CARD_H,
+        background: inCart
+          ? 'rgba(59,130,246,0.12)'
+          : hovered ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.045)',
+        border: `1px solid ${
+          inCart ? 'rgba(59,130,246,0.45)'
+          : hovered ? 'rgba(255,255,255,0.22)'
+          : 'rgba(255,255,255,0.09)'}`,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: '14px',
+        padding: '13px 14px',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        boxShadow: hovered ? '0 16px 40px rgba(0,0,0,0.45)' : '0 4px 16px rgba(0,0,0,0.25)',
+        display: 'flex', flexDirection: 'column',
+        position: 'relative', overflow: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* Special badge — sits at top edge */}
+      {product.onSpecial && (
+        <div style={{
+          position: 'absolute', top: 0, right: '12px',
+          background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+          color: '#fff', fontSize: '9px', fontWeight: '800',
+          padding: '2px 7px', borderRadius: '0 0 7px 7px',
+          letterSpacing: '0.3px',
+        }}>
+          -{Math.round(product.discount * 100)}%
+        </div>
+      )}
+
+      {/* Tier label */}
+      <div style={{
+        fontSize: '9px', fontWeight: '700',
+        color: 'rgba(255,255,255,0.22)',
+        textTransform: 'uppercase', letterSpacing: '0.8px',
+        marginBottom: '5px',
+      }}>
+        T{tier}
+      </div>
+
+      {/* Product name */}
+      <div style={{
+        fontSize: '12px', fontWeight: '700', color: '#fff',
+        lineHeight: '1.3', fontFamily: "'Bricolage Grotesque', sans-serif",
+        overflow: 'hidden', display: '-webkit-box',
+        WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+        flex: 1,
+        marginBottom: '10px',
+      }}>
+        {product.name}
+      </div>
+
+      {/* Price row + add button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+        <span style={{
+          fontSize: '14px', fontWeight: '800', color: '#60a5fa',
+          fontFamily: "'Bricolage Grotesque', sans-serif", letterSpacing: '-0.3px',
+        }}>
+          ${finalPrice}
+        </span>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={e => { e.stopPropagation(); onAdd(product); }}
+          style={{
+            width: '28px', height: '28px',
+            background: inCart ? 'rgba(74,222,128,0.18)' : 'linear-gradient(135deg, #2563eb, #7c3aed)',
+            border: inCart ? '1px solid rgba(74,222,128,0.4)' : 'none',
+            borderRadius: '8px', fontSize: '14px', fontWeight: '700',
+            color: inCart ? '#4ade80' : '#fff',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            lineHeight: 1,
+          }}
+        >
+          {inCart ? '✓' : '+'}
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── One product family rendered as a tiered tree ──────────────────────────
+function FamilyTree({ familyName, items, onNavigate, onAdd, cart, delay }) {
+  // Group by tier
+  const byTier = {};
+  items.forEach(p => {
+    const t = p.productTier || 1;
+    if (!byTier[t]) byTier[t] = [];
+    byTier[t].push(p);
+  });
+  const tiers = Object.keys(byTier).map(Number).sort((a, b) => a - b);
+
+  // Tier 1 determines column count
+  const tier1 = byTier[tiers[0]] || [];
+  const colCount = Math.max(tier1.length, 1);
+
+  // Total canvas dimensions
+  const totalW = colCount * CARD_W + (colCount - 1) * H_GAP;
+  const rowCount = tiers.length;
+  const totalH = rowCount * CARD_H + (rowCount - 1) * V_GAP;
+
+  // Build SVG lines
+  const lines = [];
+
+  // Horizontal line connecting tier-1 siblings at vertical midpoint
+  if (tier1.length > 1) {
+    const midY = CARD_H / 2;
+    const x1 = CARD_W / 2;
+    const x2 = (tier1.length - 1) * (CARD_W + H_GAP) + CARD_W / 2;
+    lines.push({ x1, y1: midY, x2, y2: midY, key: 'h-t1' });
+  }
+
+  // Vertical lines: parent bottom-center → child top-center
+  tiers.forEach((tier, ti) => {
+    if (ti === tiers.length - 1) return; // no children for last tier
+    const nextTier = tiers[ti + 1];
+    const tierProducts = byTier[tier] || [];
+    const nextProducts = byTier[nextTier] || [];
+
+    tierProducts.forEach((_, ci) => {
+      if (!nextProducts[ci]) return; // no child at this column
+      const x = ci * (CARD_W + H_GAP) + CARD_W / 2;
+      const y1 = ti * (CARD_H + V_GAP) + CARD_H;        // parent bottom
+      const y2 = (ti + 1) * (CARD_H + V_GAP);            // child top
+      lines.push({ x1: x, y1, x2: x, y2, key: `v-${tier}-${ci}` });
+    });
+  });
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {/* Family header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+        <div style={{
+          width: '7px', height: '7px', borderRadius: '50%',
+          background: '#3b82f6', boxShadow: '0 0 8px rgba(59,130,246,0.7)',
+          flexShrink: 0,
+        }} />
+        <span style={{
+          fontSize: '14px', fontWeight: '700', color: '#fff',
+          fontFamily: "'Bricolage Grotesque', sans-serif", letterSpacing: '-0.2px',
+        }}>
+          {familyName}
+        </span>
+        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.28)' }}>
+          {items.length} product{items.length !== 1 ? 's' : ''}
+        </span>
+        {tiers.map(t => (
+          <span key={t} style={{
+            fontSize: '10px', fontWeight: '600',
+            color: 'rgba(255,255,255,0.28)',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '5px', padding: '1px 7px',
+            letterSpacing: '0.3px',
+          }}>
+            Tier {t}
+          </span>
+        ))}
+      </div>
+
+      {/* Canvas */}
+      <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
+        <div style={{ position: 'relative', width: totalW, height: totalH, minWidth: totalW }}>
+
+          {/* SVG connector lines */}
+          <svg
+            width={totalW}
+            height={totalH}
+            style={{
+              position: 'absolute', top: 0, left: 0,
+              zIndex: 0, overflow: 'visible', pointerEvents: 'none',
+            }}
+          >
+            {lines.map(l => (
+              <line
+                key={l.key}
+                x1={l.x1} y1={l.y1}
+                x2={l.x2} y2={l.y2}
+                stroke="rgba(59,130,246,0.3)"
+                strokeWidth="1.5"
+              />
+            ))}
+          </svg>
+
+          {/* Cards positioned absolutely on the canvas */}
+          {tiers.map((tier, ti) => {
+            const tierProducts = byTier[tier] || [];
+            return tierProducts.map((product, ci) => {
+              const left = ci * (CARD_W + H_GAP);
+              const top  = ti * (CARD_H + V_GAP);
+              const inCart = cart.some(c => c.productId === product.productId);
+
+              return (
+                <div
+                  key={product.productId}
+                  style={{ position: 'absolute', left, top, zIndex: 1 }}
+                >
+                  <TreeNode
+                    product={product}
+                    inCart={inCart}
+                    onNavigate={onNavigate}
+                    onAdd={onAdd}
+                    tier={tier}
+                    animDelay={delay + ti * 0.07 + ci * 0.04}
+                  />
+                </div>
+              );
+            });
+          })}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Main TreeView export — replace the existing TreeView function ──────────
 function TreeView({ products, onNavigate, onAdd, cart }) {
+  // Group all products by family
   const families = products.reduce((acc, p) => {
     const fam = p.family || 'Other';
     if (!acc[fam]) acc[fam] = [];
     acc[fam].push(p);
     return acc;
   }, {});
-  Object.keys(families).forEach(f => families[f].sort((a, b) => (a.productTier || 0) - (b.productTier || 0)));
+
+  // Sort each family's products by tier
+  Object.keys(families).forEach(f =>
+    families[f].sort((a, b) => (a.productTier || 1) - (b.productTier || 1))
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '52px' }}>
       {Object.entries(families).map(([familyName, items], fi) => (
-        <motion.div
+        <FamilyTree
           key={familyName}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: fi * 0.1 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <div style={{ width: '32px', height: '32px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa' }}>
-              <FamilyIcon family={familyName} size={15} />
-            </div>
-            <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', fontFamily: "'Bricolage Grotesque', sans-serif", letterSpacing: '-0.3px' }}>{familyName}</span>
-            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.28)' }}>{items.length} products</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', paddingBottom: '12px', gap: '0' }}>
-            {items.map((product, idx) => {
-              const finalPrice = product.onSpecial ? (product.cost * (1 - product.discount)).toFixed(2) : Number(product.cost).toFixed(2);
-              const inCart = cart.some(c => c.productId === product.productId);
-              return (
-                <React.Fragment key={product.productId}>
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: fi * 0.1 + idx * 0.06 }}
-                    onClick={() => onNavigate(product)}
-                    style={{
-                      background: inCart ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.04)',
-                      border: `1px solid ${inCart ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                      backdropFilter: 'blur(16px)',
-                      WebkitBackdropFilter: 'blur(16px)',
-                      borderRadius: '14px', padding: '16px',
-                      minWidth: '160px', maxWidth: '180px',
-                      cursor: 'pointer', position: 'relative',
-                      transition: 'all 0.2s',
-                      boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
-                      overflow: 'visible', 
-                      marginTop: '10px',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = inCart ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = inCart ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                  >
-                    {product.onSpecial && (
-                      <div style={{ position: 'absolute', top: '-8px', right: '10px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '10px', boxShadow: '0 4px 10px rgba(245,158,11,0.4)' }}>
-                        -{Math.round(product.discount * 100)}%
-                      </div>
-                    )}
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: 'rgba(255,255,255,0.28)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '6px' }}>Tier {product.productTier || 1}</div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', marginBottom: '8px', lineHeight: '1.3', fontFamily: "'Bricolage Grotesque', sans-serif" }}>{product.name}</div>
-                    <div style={{ fontSize: '16px', fontWeight: '800', color: '#60a5fa', marginBottom: '12px', fontFamily: "'Bricolage Grotesque', sans-serif" }}>${finalPrice}</div>
-                    <motion.button
-                      whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                      onClick={e => { e.stopPropagation(); onAdd(product); }}
-                      style={{
-                        width: '100%', padding: '7px 0',
-                        background: inCart ? 'rgba(74,222,128,0.15)' : 'linear-gradient(135deg, #2563eb, #7c3aed)',
-                        border: inCart ? '1px solid rgba(74,222,128,0.35)' : 'none',
-                        borderRadius: '8px', fontSize: '11px', fontWeight: '700',
-                        color: inCart ? '#4ade80' : '#fff',
-                        cursor: 'pointer',
-                        fontFamily: "'Geist', sans-serif",
-                      }}
-                    >{inCart ? 'Added' : '+ Add'}</motion.button>
-                  </motion.div>
-                  {idx < items.length - 1 && (
-                    <div style={{ display: 'flex', alignItems: 'center', minWidth: '40px', flexShrink: 0 }}>
-                      <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(59,130,246,0.4), rgba(124,58,237,0.4))' }} />
-                      <div style={{ width: '5px', height: '5px', border: '1.5px solid rgba(124,58,237,0.6)', borderLeft: 'none', borderBottom: 'none', transform: 'rotate(45deg)', marginLeft: '-3px' }} />
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        </motion.div>
+          familyName={familyName}
+          items={items}
+          onNavigate={onNavigate}
+          onAdd={onAdd}
+          cart={cart}
+          delay={fi * 0.08}
+        />
       ))}
     </div>
   );
