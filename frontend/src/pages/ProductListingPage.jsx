@@ -221,7 +221,7 @@ export default function ProductListingPage() {
   const [formError, setFormError] = useState('');
   const [search, setSearch] = useState('');
 
-  const load = () => {
+  const load = React.useCallback(() => {
     fetch(`${API_BASE}/products/`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => {
         if (r.status === 401) {
@@ -233,7 +233,7 @@ export default function ProductListingPage() {
       .then(d => setProducts(Array.isArray(d) ? d : []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  };
+  }, [navigate, token]);
 
   useEffect(() => {
     if (!token) {
@@ -241,7 +241,7 @@ export default function ProductListingPage() {
       return;
     }
     load();
-  }, [token, navigate]);
+  }, [token, navigate, load]);
 
   const myProducts = products.filter(p => String(p.sellerId) === String(sellerId));
   const filtered = myProducts.filter(p =>

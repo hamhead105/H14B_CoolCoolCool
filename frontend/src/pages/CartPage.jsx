@@ -20,7 +20,7 @@ export default function CartPage() {
 
   const updateQty = (productId, delta) => {
     const updated = cart.map(item =>
-      item.productId == productId ? { ...item, qty: Math.max(1, item.qty + delta) } : item
+      item.productId === productId ? { ...item, qty: Math.max(1, item.qty + delta) } : item
     );
     setCartState(updated); saveCart(updated);
   };

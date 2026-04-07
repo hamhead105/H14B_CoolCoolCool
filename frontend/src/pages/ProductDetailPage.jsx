@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Spline from '@splinetool/react-spline';
 import Sidebar from '../components/Sidebar';
 
