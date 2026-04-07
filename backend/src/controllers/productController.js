@@ -108,11 +108,14 @@ export async function putProduct(req, res) {
       cost: req.body.cost ?? existing.cost,
       discount: req.body.discount ?? existing.discount,
       onSpecial: req.body.onSpecial ?? existing.onSpecial,
+      brand: req.body.brand ?? existing.brand,
+      family: req.body.family ?? existing.family,
+      productTier: req.body.productTier ?? existing.productTier,
+      nextProduct: req.body.nextProduct ?? existing.nextProduct,
+      releaseDate: req.body.releaseDate ? new Date(req.body.releaseDate) : existing.releaseDate,
     };
 
-    await updateProduct(productId, {
-      inputData: mergedInput,
-    });
+    await updateProduct(productId, mergedInput);
 
     return res.status(200).json(await getProductById(productId));
   }
