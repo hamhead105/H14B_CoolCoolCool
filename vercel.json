@@ -25,7 +25,7 @@
       "dest": "/frontend/$1"
     },
     {
-      "src": "/(buyers|sellers|orders|products|health|api-docs)(.*)",
+      "src": "/api/(buyers|sellers|orders|products|health|api-docs)(.*)",
       "dest": "/backend/src/server.js"
     },
     {
