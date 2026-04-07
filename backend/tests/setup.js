@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+
 // Global test setup
 global.console = {
   ...console,
@@ -11,6 +13,9 @@ global.console = {
 
 // Global test timeout
 jest.setTimeout(10000);
+
+// Ensure JWT_SECRET exists during tests so auth middleware can run with mocked jsonwebtoken
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 
 // Setup fetch for older Node versions if needed
 if (!global.fetch) {
