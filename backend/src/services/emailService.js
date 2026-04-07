@@ -11,6 +11,14 @@ const transporter = nodemailer.createTransport({
 });
 
 /**
+ * Check if email service is configured
+ * @returns {boolean} true if SMTP is configured
+ */
+export function isEmailConfigured() {
+  return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
+/**
  * Send UBL XML as an email attachment.
  * @param {string} to - recipient email address
  * @param {string} orderId - the order ID (used in subject / filename)
@@ -18,6 +26,11 @@ const transporter = nodemailer.createTransport({
  * @returns {Promise<object>} nodemailer send result
  */
 export async function sendOrderEmail(to, orderId, xmlContent) {
+  if (!isEmailConfigured()) {
+    console.log('SMTP not configured, skipping email send');
+    return null;
+  }
+
   const mailOptions = {
     from: process.env.SMTP_USER || 'noreply@coolcoolcool.app',
     to,

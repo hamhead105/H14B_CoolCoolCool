@@ -1,5 +1,5 @@
 import express from 'express';
-import { postRating, getRating } from '../controllers/ratingController.js';
+import { postRating, getRating } from '../controllers/orderController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();

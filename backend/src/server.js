@@ -11,7 +11,6 @@ import buyerRoutes from './routes/buyers.js'
 import sellerRoutes from './routes/sellers.js'
 import emailRoutes from './routes/email.js';
 import ratingRoutes from './routes/ratings.js';
-import specialsRoutes from './routes/specials.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +29,6 @@ app.use('/health', healthRoutes);
 app.use('/api-docs', docsRoutes);
 app.use('/buyers', buyerRoutes);
 app.use('/sellers', sellerRoutes);
-app.use('/specials', specialsRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -39,16 +37,12 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
-
-// stop hanging
-// if (require.main === module) {
-//     app.listen(port, () => {
-//         console.log(`Server running at http://localhost:${port}`);
-//     });
-// }
+// Only start the server if this file is run directly (not imported as a module)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
 
 
 export default app;

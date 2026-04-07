@@ -8,6 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import BuyerDashboard from './pages/BuyerDashboard';
 import SellerDashboard from './pages/SellerDashboard';
 import ProductsPage from './pages/ProductsPage';
+import SpecialsPage from './pages/SpecialsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import ProductListingPage from './pages/ProductListingPage';
 import CartPage from './pages/CartPage';
@@ -50,6 +51,9 @@ export default function App() {
         } />
         <Route path="/products" element={
           <ProtectedRoute><ProductsPage /></ProtectedRoute>
+        } />
+        <Route path="/specials" element={
+          <ProtectedRoute><SpecialsPage /></ProtectedRoute>
         } />
         <Route path="/products/:id" element={
           <ProtectedRoute><ProductDetailPage /></ProtectedRoute>

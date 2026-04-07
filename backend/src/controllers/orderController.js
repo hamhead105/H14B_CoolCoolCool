@@ -1,5 +1,6 @@
 import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from '../services/xmlService.js';
 import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders } from '../services/orderService.js';
+import { sendOrderEmail, isEmailConfigured } from '../services/emailService.js';
 
 const LOYALTY_COEFF = 0.08;
 
@@ -53,6 +54,19 @@ export async function postOrder(req, res) {
         });
       }
       throw error;
+    }
+
+    // Send UBL email to buyer (don't fail order if email fails or is not configured)
+    if (isEmailConfigured() && buyer.email && buyer.email !== 'NOT-PROVIDED') {
+      try {
+        await sendOrderEmail(buyer.email, order.id, xml_output);
+        console.log(`UBL email sent to ${buyer.email} for order ${order.id}`);
+      } catch (emailError) {
+        console.error('Failed to send UBL email:', emailError);
+        // Don't fail the order creation if email fails
+      }
+    } else if (!isEmailConfigured()) {
+      console.log('Email service not configured, skipping UBL email send');
     }
 
     return res.status(200).json({
@@ -203,8 +217,83 @@ export async function listOrders(req, res) {
       status: o.status,
       totalCost: o.totalCost,
       createdAt: o.createdAt,
-      inputData: o.inputData
+      inputData: o.inputData,
+      rating: o.ratingScore ? {
+        score: o.ratingScore,
+        comment: o.ratingComment
+      } : null
     })));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function postRating(req, res) {
+  const orderId = req.params.id;
+  const buyerId = req.user.buyerId;
+  const role = req.user.role;
+
+  if (role !== 'buyer') {
+    return res.status(403).json({ error: 'Only buyers can rate orders.' });
+  }
+
+  const { score, comment } = req.body;
+
+  if (score === undefined || score === null || !Number.isInteger(score) || score < 1 || score > 5) {
+    return res.status(422).json({ error: 'Score is required and must be an integer between 1 and 5.' });
+  }
+
+  try {
+    const order = await getOrderById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.buyerId !== buyerId) {
+      return res.status(403).json({ error: 'You can only rate your own orders.' });
+    }
+
+    if (order.ratingScore !== null) {
+      return res.status(409).json({ error: 'Rating already exists for this order.' });
+    }
+
+    await updateOrder(orderId, {
+      ratingScore: score,
+      ratingComment: comment || null
+    });
+
+    return res.status(201).json({
+      orderId,
+      score,
+      comment: comment || null
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function getRating(req, res) {
+  const orderId = req.params.id;
+
+  try {
+    const order = await getOrderById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.ratingScore === null) {
+      return res.status(404).json({ error: 'Rating not found for this order.' });
+    }
+
+    return res.status(200).json({
+      orderId,
+      score: order.ratingScore,
+      comment: order.ratingComment
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });

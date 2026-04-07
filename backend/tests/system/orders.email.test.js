@@ -35,10 +35,16 @@ await jest.unstable_mockModule('nodemailer', () => ({
   }
 }));
 
+await jest.unstable_mockModule('../../src/services/emailService.js', () => ({
+  sendOrderEmail: jest.fn(),
+  isEmailConfigured: jest.fn(() => true)
+}));
+
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
 const { default: app } = await import('../../src/server.js');
+const { sendOrderEmail, isEmailConfigured } = await import('../../src/services/emailService.js');
 
 let server;
 let url;
@@ -148,7 +154,7 @@ describe('POST /orders/:id/email', () => {
 
   test('HTTP 200: email sent successfully', async () => {
     prisma.order.findUnique.mockResolvedValue(sampleOrder);
-    mSendMail.mockResolvedValue({ messageId: '<abc@test>' });
+    sendOrderEmail.mockResolvedValue({ messageId: '<abc@test>' });
 
     const res = await fetch(`${url}/orders/ORD-001/email`, {
       method: 'POST',
@@ -163,18 +169,18 @@ describe('POST /orders/:id/email', () => {
       recipientEmail: 'recipient@example.com'
     });
     expect(data.message).toMatch(/sent/i);
-    expect(mSendMail).toHaveBeenCalledTimes(1);
+    expect(sendOrderEmail).toHaveBeenCalledTimes(1);
 
-    const call = mSendMail.mock.calls[0][0];
-    expect(call.to).toBe('recipient@example.com');
-    expect(call.attachments[0].filename).toBe('ORD-001.xml');
-    expect(call.attachments[0].content).toContain('<Order');
-    expect(call.attachments[0].content).toContain('UBLVersionID');
+    const [to, orderId, xmlContent] = sendOrderEmail.mock.calls[0];
+    expect(to).toBe('recipient@example.com');
+    expect(orderId).toBe('ORD-001');
+    expect(xmlContent).toContain('<Order');
+    expect(xmlContent).toContain('UBLVersionID');
   });
 
   test('HTTP 500: email delivery failure', async () => {
     prisma.order.findUnique.mockResolvedValue(sampleOrder);
-    mSendMail.mockRejectedValue(new Error('SMTP connection refused'));
+    sendOrderEmail.mockRejectedValue(new Error('SMTP connection refused'));
 
     const res = await fetch(`${url}/orders/ORD-001/email`, {
       method: 'POST',

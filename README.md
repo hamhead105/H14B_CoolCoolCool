@@ -33,9 +33,6 @@ npm test
 | DELETE | /orders/:id | Delete an order |
 | GET | /orders | Retrieve all order and related UBL XML optianlly filtered by order status and/or buyerId|
 | POST | /orders/:id/email | Generate UBL XML and email it to a recipient |
-
-## Frontend
-- Orders page: `http://localhost:3000/orders.html` (login, view orders, preview UBL XML, send via email)
 | POST | /orders/:id/rating | Submit a rating (1–5) for an order |
 | GET | /orders/:id/rating | Retrieve the rating for an order |
 

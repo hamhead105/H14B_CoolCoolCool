@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 
 const API_BASE = 'https://h14-b-cool-cool-cool.vercel.app';
@@ -11,6 +10,11 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [devView, setDevView] = useState('xml');
+  const [rating, setRating] = useState(null);
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [ratingScore, setRatingScore] = useState(5);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
   const role = localStorage.getItem('role');
   const currentSellerId = localStorage.getItem('sellerId');
 
@@ -25,6 +29,50 @@ export default function OrderDetailsPage() {
       .then(data => setOrder(data))
       .finally(() => setLoading(false));
   }, [orderId, navigate]);
+
+  useEffect(() => {
+    if (role === 'buyer' && order) {
+      const token = localStorage.getItem('token');
+      fetch(`${API_BASE}/orders/${orderId}/rating`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => setRating(data))
+        .catch(() => setRating(null));
+    }
+  }, [orderId, role, order]);
+
+  const submitRating = async () => {
+    if (submittingRating) return;
+    setSubmittingRating(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/orders/${orderId}/rating`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          score: ratingScore,
+          comment: ratingComment.trim() || null
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRating(data);
+        setShowRatingForm(false);
+      } else {
+        alert('Failed to submit rating. Please try again.');
+      }
+    } catch (error) {
+      alert('Error submitting rating. Please try again.');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   if (loading) return null;
   if (!order) return <div style={{ color: 'white', padding: '50px' }}>Order not found.</div>;
@@ -98,6 +146,145 @@ export default function OrderDetailsPage() {
               )}
             </div>
           </div>
+
+          {/* Rating Section - Only for Buyers */}
+          {role === 'buyer' && (
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', marginBottom: '16px', letterSpacing: '1px' }}>ORDER RATING</h3>
+              
+              {rating ? (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', gap: '2px' }}>
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <span key={star} style={{ 
+                          color: star <= rating.score ? '#fbbf24' : 'rgba(255,255,255,0.2)', 
+                          fontSize: '18px' 
+                        }}>
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <span style={{ color: '#fbbf24', fontWeight: '700', fontSize: '14px' }}>
+                      {rating.score}/5
+                    </span>
+                  </div>
+                  {rating.comment && (
+                    <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', fontStyle: 'italic' }}>
+                      "{rating.comment}"
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  {!showRatingForm ? (
+                    <button
+                      onClick={() => setShowRatingForm(true)}
+                      style={{
+                        background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                        color: '#000',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      Rate This Order
+                    </button>
+                  ) : (
+                    <div>
+                      <div style={{ marginBottom: '16px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                          Rating (1-5 stars)
+                        </label>
+                        <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <button
+                              key={star}
+                              onClick={() => setRatingScore(star)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: star <= ratingScore ? '#fbbf24' : 'rgba(255,255,255,0.2)',
+                                fontSize: '24px',
+                                cursor: 'pointer',
+                                transition: 'color 0.2s'
+                              }}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div style={{ marginBottom: '16px' }}>
+                        <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                          Comment (optional)
+                        </label>
+                        <textarea
+                          value={ratingComment}
+                          onChange={(e) => setRatingComment(e.target.value)}
+                          placeholder="Share your experience..."
+                          style={{
+                            width: '100%',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            color: '#fff',
+                            fontSize: '13px',
+                            fontFamily: 'inherit',
+                            resize: 'vertical',
+                            minHeight: '80px'
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                          onClick={submitRating}
+                          disabled={submittingRating}
+                          style={{
+                            background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                            color: '#000',
+                            border: 'none',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '700',
+                            cursor: submittingRating ? 'not-allowed' : 'pointer',
+                            opacity: submittingRating ? 0.6 : 1,
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {submittingRating ? 'Submitting...' : 'Submit Rating'}
+                        </button>
+                        <button
+                          onClick={() => setShowRatingForm(false)}
+                          style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            color: 'rgba(255,255,255,0.7)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Line Items - Split View for Sellers */}
           <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>

@@ -20,6 +20,11 @@ const icons = {
       <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
     </svg>
   ),
+  specials: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+  ),
   cart: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="9" cy="21" r="1.5"/><circle cx="20" cy="21" r="1.5"/>
@@ -37,6 +42,7 @@ const icons = {
 const BUYER_NAV = [
   { label: 'Dashboard', path: '/buyer/dashboard', icon: 'dashboard' },
   { label: 'Products', path: '/products', icon: 'products' },
+  { label: 'Specials', path: '/specials', icon: 'specials' },
   { label: 'Cart', path: '/cart', icon: 'cart' },
   { label: 'My Orders', path: '/buyer/orders', icon: 'orders' },
 ];
@@ -44,6 +50,7 @@ const BUYER_NAV = [
 const SELLER_NAV = [
   { label: 'Dashboard', path: '/seller/dashboard', icon: 'dashboard' },
   { label: 'My Products', path: '/seller/products', icon: 'products' },
+  { label: 'Specials', path: '/specials', icon: 'specials' },
   { label: 'Orders', path: '/orders', icon: 'orders' },
 ];
 
