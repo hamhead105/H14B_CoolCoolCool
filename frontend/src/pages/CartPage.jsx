@@ -40,7 +40,7 @@ export default function CartPage() {
   const handleOrder = async () => {
     const token = localStorage.getItem('token');
     const buyerId = localStorage.getItem('buyerId');
-
+  
     if (!token || !buyerId) {
       alert("Authentication missing. Please log in.");
       return;
@@ -51,10 +51,9 @@ export default function CartPage() {
       const profileRes = await fetch(`${API_BASE}/buyers/${buyerId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       if (!profileRes.ok) throw new Error("Failed to retrieve buyer profile.");
       const dbBuyer = await profileRes.json();
-
+  
       const buyerData = {
         buyerId: buyerId,
         name: dbBuyer.businessName || dbBuyer.name || "NOT-PROVIDED",
@@ -70,7 +69,38 @@ export default function CartPage() {
         contactPhone: dbBuyer.phone || dbBuyer.contactPhone || "NOT-PROVIDED",
         contactEmail: dbBuyer.contactEmail || dbBuyer.email || "NOT-PROVIDED",
       };
-
+  
+      const uniqueSellerIds = [...new Set(cart.map(item => String(item.sellerId)))];
+      let sellerDataPayload = { 
+        name: "Multiple Sellers", 
+        street: "Multi", city: "Multi", postalCode: "0000", countryCode: "AU", 
+        companyId: "N/A", taxSchemeId: "GST", legalEntityId: "N/A", 
+        contactName: "N/A", contactPhone: "N/A", contactEmail: "N/A" 
+      };
+  
+      if (uniqueSellerIds.length === 1) {
+        const sId = uniqueSellerIds[0];
+        const sRes = await fetch(`${API_BASE}/sellers/${sId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (sRes.ok) {
+          const sDb = await sRes.json();
+          sellerDataPayload = {
+            name: sDb.businessName || sDb.name,
+            street: sDb.street || "NOT-PROVIDED",
+            city: sDb.city || "NOT-PROVIDED",
+            postalCode: sDb.postalCode || "0000",
+            countryCode: sDb.countryCode || "AU",
+            companyId: sDb.companyId || "NOT-PROVIDED",
+            taxSchemeId: sDb.taxSchemeId || "GST",
+            legalEntityId: sDb.legalEntityId || "NOT-PROVIDED",
+            contactName: sDb.contactName || sDb.name,
+            contactPhone: sDb.contactPhone || "NOT-PROVIDED",
+            contactEmail: sDb.contactEmail || sDb.email || "NOT-PROVIDED"
+          };
+        }
+      }
+  
       const orderPayload = {
         buyerId: buyerId,
         order: { 
@@ -80,8 +110,15 @@ export default function CartPage() {
           note: "Standard B2B Order"
         },
         buyer: buyerData,
-        seller: { name: "Multiple Sellers", street: "Multi", city: "Multi", postalCode: "0000", countryCode: "AU", companyId: "N/A", taxSchemeId: "GST", legalEntityId: "N/A", contactName: "N/A", contactPhone: "N/A", contactEmail: "N/A" },
-        delivery: { street: buyerData.street, city: buyerData.city, postalCode: buyerData.postalCode, countryCode: buyerData.countryCode, requestedStartDate: new Date().toISOString().split('T')[0], requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] },
+        seller: sellerDataPayload,
+        delivery: { 
+          street: buyerData.street, 
+          city: buyerData.city, 
+          postalCode: buyerData.postalCode, 
+          countryCode: buyerData.countryCode, 
+          requestedStartDate: new Date().toISOString().split('T')[0], 
+          requestedEndDate: new Date(Date.now() + 604800000).toISOString().split('T')[0] 
+        },
         tax: { taxPercent: 10, taxTypeCode: "GST" },
         items: cart.map((item, idx) => ({
           id: (idx + 1).toString(),
@@ -92,16 +129,40 @@ export default function CartPage() {
           sellerId: String(item.sellerId) 
         }))
       };
-
+  
       const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(orderPayload)
       });
-
+  
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Order failed');
-
+  
+      uniqueSellerIds.forEach(async (sId) => {
+        try {
+          const sellerRes = await fetch(`${API_BASE}/sellers/${sId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const sInfo = await sellerRes.json();
+          const targetEmail = sInfo.contactEmail || sInfo.email;
+  
+          if (targetEmail) {
+            await fetch(`${API_BASE}/orders/${data.orderId}/email`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${token}` 
+              },
+              body: JSON.stringify({ recipientEmail: targetEmail })
+            });
+            console.log(`UBL dispatched to ${targetEmail}`);
+          }
+        } catch (err) {
+          console.error(`Email failed for ${sId}:`, err);
+        }
+      });
+  
       setUblXml(data.ublDocument);
       setOrderPlaced(true);
       localStorage.removeItem('cart');
@@ -124,18 +185,39 @@ export default function CartPage() {
   if (orderPlaced) return (
     <div style={{ display: 'flex', height: '100vh', background: '#050d1a', fontFamily: "'Geist', sans-serif" }}>
       <Sidebar />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
+      {/* ADDED: overflowY: 'auto' so the main wrapper can scroll on tiny screens */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', overflowY: 'auto' }}>
+        
+        {/* ADDED: margin: 'auto' to work safely with overflow */}
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '48px', maxWidth: '540px', textAlign: 'center', backdropFilter: 'blur(20px)' }}>
+          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '48px', maxWidth: '640px', width: '100%', textAlign: 'center', backdropFilter: 'blur(20px)', margin: 'auto' }}>
+          
           <div style={{ fontSize: '48px', marginBottom: '20px' }}>✅</div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginBottom: '12px', fontFamily: "'Bricolage Grotesque', sans-serif" }}>Order Placed!</h1>
           <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: '32px', lineHeight: '1.6' }}>Your UBL-compliant purchase order has been generated and broadcasted to suppliers.</p>
+          
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
             <button onClick={downloadUBL} style={{ padding: '12px 24px', background: '#3b82f6', border: 'none', borderRadius: '12px', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>Download UBL XML</button>
             <button onClick={() => setShowUbl(!showUbl)} style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>{showUbl ? 'Hide' : 'View'} XML</button>
           </div>
+          
           {showUbl && (
-            <pre style={{ marginTop: '24px', background: '#000', padding: '20px', borderRadius: '12px', fontSize: '11px', color: '#a78bfa', textAlign: 'left', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{ublXml}</pre>
+            <pre style={{ 
+              marginTop: '24px', 
+              background: '#000', 
+              padding: '20px', 
+              borderRadius: '12px', 
+              fontSize: '11px', 
+              color: '#a78bfa', 
+              textAlign: 'left', 
+              overflowX: 'auto', 
+              overflowY: 'auto', 
+              maxHeight: '350px', 
+              whiteSpace: 'pre-wrap', 
+              wordBreak: 'break-all' 
+            }}>
+              {ublXml}
+            </pre>
           )}
         </motion.div>
       </div>

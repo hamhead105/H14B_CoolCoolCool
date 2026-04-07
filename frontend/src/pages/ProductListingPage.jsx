@@ -521,7 +521,7 @@ export default function ProductListingPage() {
                       <td style={{ padding: '18px 22px', color: 'rgba(255,255,255,0.65)' }}>T{p.productTier || 1}</td>
                       <td style={{ padding: '18px 22px' }}>
                         <div style={{ fontWeight: 700, color: '#fff' }}>${Number(p.cost).toFixed(2)}</div>
-                        {p.onSpecial && <div style={{ fontSize: '11px', color: '#fbbf24' }}>-{Math.round(p.discount)}%</div>}
+                        {p.onSpecial && <div style={{ fontSize: '11px', color: '#fbbf24' }}>-{Math.round(p.discount * 100)}%</div>}
                       </td>
                       <td style={{ padding: '18px 22px' }}>
                         {p.onSpecial ? (
