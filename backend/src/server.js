@@ -1,4 +1,5 @@
-import 'dotenv/config';
+// import 'dotenv/config';
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -29,6 +30,9 @@ app.use('/api/health', healthRoutes);
 app.use('/api/api-docs', docsRoutes);
 app.use('/api/buyers', buyerRoutes);
 app.use('/api/sellers', sellerRoutes);
+
+// Added line below
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {

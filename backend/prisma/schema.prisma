@@ -62,6 +62,10 @@ model Order {
   loyaltyPointsRedeemed    Int      @default(0)
   ratingScore              Int?
   ratingComment            String?
+  externalInvoiceId        String?
+  invoiceStatus            String?
+  invoiceMetadata          Json?
+  invoiceError             String?
   createdAt                DateTime @default(now())
 }
 

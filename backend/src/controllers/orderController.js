@@ -1,6 +1,7 @@
 import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from '../services/xmlService.js';
 import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders } from '../services/orderService.js';
 import { sendOrderEmail, isEmailConfigured } from '../services/emailService.js';
+import { createInvoice } from '../services/invoiceService.js';
 
 const LOYALTY_COEFF = 0.08;
 
