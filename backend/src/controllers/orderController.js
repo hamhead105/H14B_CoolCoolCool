@@ -6,14 +6,13 @@ import { createInvoice } from '../services/invoiceService.js';
 const LOYALTY_COEFF = 0.08;
 
 export async function postOrder(req, res) {
-  
   const buyerId = req.user.buyerId;
   const role = req.user.role;
 
   if (role !== 'buyer') {
     return res.status(403).json({ error: 'Only buyers can create orders.' });
   }
-  
+
   const { order, buyer, seller, delivery, tax, items, loyaltyPointsRedeemed } = req.body;
 
   if (!order?.id || !buyer?.companyId || !items || !Array.isArray(items)) {
@@ -34,9 +33,12 @@ export async function postOrder(req, res) {
     const taxAmount = Number(getTaxAmount(enrichedBody).toFixed(2));
     const payableAmount = Number(getPayableAmount(enrichedBody).toFixed(2));
     const lineExtensionAmount = getLineExtension(enrichedBody);
+    const loyaltyPointsEarned = Math.round(payableAmount * LOYALTY_COEFF);
 
-    try{
-      await createOrder({
+    let createdOrder;
+
+    try {
+      createdOrder = await createOrder({
         orderId: order.id,
         buyerId: parseInt(buyerId, 10),
         status: 'order placed',
@@ -45,26 +47,42 @@ export async function postOrder(req, res) {
         taxAmount,
         payableAmount,
         anticipatedMonetaryTotal: lineExtensionAmount,
-        loyaltyPointsEarned: Math.round(payableAmount * LOYALTY_COEFF),
+        loyaltyPointsEarned,
         loyaltyPointsRedeemed: 0,
       });
     } catch (error) {
       if (error.code === 'P2002') {
         return res.status(400).json({
-          error: "Duplicate order: An order with this ID already exists.",
+          error: 'Duplicate order: An order with this ID already exists.',
         });
       }
       throw error;
     }
 
-    // Send UBL email to buyer (don't fail order if email fails or is not configured)
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(today.getDate() + 7);
+
+    let invoice = null;
+
+    try {
+      invoice = await createInvoice({
+        order_reference: String(createdOrder.orderId ?? order.id),
+        customer_id: String(buyer.companyId),
+        issue_date: today.toISOString().slice(0, 10),
+        due_date: dueDate.toISOString().slice(0, 10),
+        currency: order.currencyID || 'AUD',
+      });
+    } catch (invoiceError) {
+      console.error('Failed to create invoice:', invoiceError.message);
+    }
+
     if (isEmailConfigured() && buyer.email && buyer.email !== 'NOT-PROVIDED') {
       try {
         await sendOrderEmail(buyer.email, order.id, xml_output);
         console.log(`UBL email sent to ${buyer.email} for order ${order.id}`);
       } catch (emailError) {
         console.error('Failed to send UBL email:', emailError);
-        // Don't fail the order creation if email fails
       }
     } else if (!isEmailConfigured()) {
       console.log('Email service not configured, skipping UBL email send');
@@ -77,9 +95,10 @@ export async function postOrder(req, res) {
       taxAmount,
       payableAmount,
       anticipatedMonetaryTotal: lineExtensionAmount,
-      loyaltyPointsEarned: Math.round(payableAmount * LOYALTY_COEFF),
+      loyaltyPointsEarned,
       loyaltyPointsRedeemed: 0,
-      ublDocument: xml_output
+      ublDocument: xml_output,
+      invoice,
     });
   } catch (error) {
     console.error(error);
