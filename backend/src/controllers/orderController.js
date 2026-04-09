@@ -1,18 +1,14 @@
 import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from '../services/xmlService.js';
 import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders } from '../services/orderService.js';
 import { sendOrderEmail, isEmailConfigured } from '../services/emailService.js';
+import { createInvoice } from '../services/invoiceService.js';
 
 const LOYALTY_COEFF = 0.08;
 
 export async function postOrder(req, res) {
-  
   const buyerId = req.user.buyerId;
-  const role = req.user.role;
 
-  if (role !== 'buyer') {
-    return res.status(403).json({ error: 'Only buyers can create orders.' });
-  }
-  
+
   const { order, buyer, seller, delivery, tax, items, loyaltyPointsRedeemed } = req.body;
 
   if (!order?.id || !buyer?.companyId || !items || !Array.isArray(items)) {
@@ -33,9 +29,12 @@ export async function postOrder(req, res) {
     const taxAmount = Number(getTaxAmount(enrichedBody).toFixed(2));
     const payableAmount = Number(getPayableAmount(enrichedBody).toFixed(2));
     const lineExtensionAmount = getLineExtension(enrichedBody);
+    const loyaltyPointsEarned = Math.round(payableAmount * LOYALTY_COEFF);
 
-    try{
-      await createOrder({
+    let createdOrder;
+
+    try {
+      createdOrder = await createOrder({
         orderId: order.id,
         buyerId: parseInt(buyerId, 10),
         status: 'order placed',
@@ -44,26 +43,28 @@ export async function postOrder(req, res) {
         taxAmount,
         payableAmount,
         anticipatedMonetaryTotal: lineExtensionAmount,
-        loyaltyPointsEarned: Math.round(payableAmount * LOYALTY_COEFF),
+        loyaltyPointsEarned,
         loyaltyPointsRedeemed: 0,
       });
     } catch (error) {
       if (error.code === 'P2002') {
         return res.status(400).json({
-          error: "Duplicate order: An order with this ID already exists.",
+          error: 'Duplicate order: An order with this ID already exists.',
         });
       }
       throw error;
     }
 
-    // Send UBL email to buyer (don't fail order if email fails or is not configured)
+    const today = new Date();
+    const dueDate = new Date(today);
+    dueDate.setDate(today.getDate() + 7);
+
     if (isEmailConfigured() && buyer.email && buyer.email !== 'NOT-PROVIDED') {
       try {
         await sendOrderEmail(buyer.email, order.id, xml_output);
         console.log(`UBL email sent to ${buyer.email} for order ${order.id}`);
       } catch (emailError) {
         console.error('Failed to send UBL email:', emailError);
-        // Don't fail the order creation if email fails
       }
     } else if (!isEmailConfigured()) {
       console.log('Email service not configured, skipping UBL email send');
@@ -76,9 +77,9 @@ export async function postOrder(req, res) {
       taxAmount,
       payableAmount,
       anticipatedMonetaryTotal: lineExtensionAmount,
-      loyaltyPointsEarned: Math.round(payableAmount * LOYALTY_COEFF),
+      loyaltyPointsEarned,
       loyaltyPointsRedeemed: 0,
-      ublDocument: xml_output
+      ublDocument: xml_output,
     });
   } catch (error) {
     console.error(error);
@@ -150,18 +151,18 @@ export async function putOrder(req, res) {
     if (!existing) return res.status(404).json({ error: 'Order not found' });
 
     let updatedItems = items || [...existing.inputData.items];
-    
+
     if (sellerId && status) {
-      updatedItems = updatedItems.map(item => 
-        String(item.sellerId) === String(sellerId) 
-          ? { ...item, itemStatus: status } 
+      updatedItems = updatedItems.map(item =>
+        String(item.sellerId) === String(sellerId)
+          ? { ...item, itemStatus: status }
           : item
       );
     }
 
     let globalStatus = existing.status;
     const allStatuses = updatedItems.map(i => i.itemStatus);
-    
+
     if (allStatuses.every(s => s === 'despatched')) {
       globalStatus = 'despatched';
     } else if (allStatuses.some(s => s === 'despatched' || s === 'confirmed')) {
@@ -175,27 +176,53 @@ export async function putOrder(req, res) {
       seller:   { ...existing.inputData.seller,   ...(seller || {}) },
       delivery: { ...existing.inputData.delivery, ...(delivery || {}) },
       tax:      { ...existing.inputData.tax,      ...(tax || {}) },
-      items:    updatedItems
+      items:    updatedItems,
     };
 
     const xml_output = create_xml(mergedInput);
     const taxAmount = Number(getTaxAmount(mergedInput).toFixed(2));
     const payableAmount = Number(getPayableAmount(mergedInput).toFixed(2));
 
-    await updateOrder(orderId, {
+    // Base update — always applied
+    const orderUpdate = {
       status: globalStatus,
       inputData: mergedInput,
       totalCost: payableAmount,
       taxAmount,
       payableAmount,
       anticipatedMonetaryTotal: getLineExtension(mergedInput),
-    });
+    };
+
+    // Auto-generate invoice when all items hit despatched for the first time
+    let invoice = null;
+    if (globalStatus === 'despatched' && !existing.externalInvoiceId) {
+      try {
+        const today = new Date();
+        const dueDate = new Date(today);
+        dueDate.setDate(today.getDate() + 7);
+
+        invoice = await createInvoice({
+          orderId: orderId,
+          inputData: mergedInput,
+        });
+
+        orderUpdate.externalInvoiceId = invoice.invoice.invoice_id;
+        orderUpdate.invoiceStatus = invoice.invoice.status;
+        orderUpdate.invoiceMetadata = invoice.invoice;
+      } catch (invoiceError) {
+        console.error('Failed to auto-generate invoice:', invoiceError.message);
+        orderUpdate.invoiceError = invoiceError.message;
+      }
+    }
+
+    await updateOrder(orderId, orderUpdate);
 
     return res.status(200).json({
       orderId,
       status: globalStatus,
       totalCost: payableAmount,
-      inputData: { ...mergedInput, ublDocument: xml_output }
+      inputData: { ...mergedInput, ublDocument: xml_output },
+      ...(invoice && { invoice: invoice.invoice }),
     });
   } catch (error) {
     console.error(error);

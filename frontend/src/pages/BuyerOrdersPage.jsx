@@ -12,6 +12,7 @@ const STATUS_STYLES = {
   confirmed: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', dot: '#3b82f6' },
   despatched: { bg: 'rgba(34,197,94,0.15)', color: '#4ade80', dot: '#22c55e' },
   cancelled: { bg: 'rgba(239,68,68,0.15)', color: '#f87171', dot: '#ef4444' },
+  invoiced: { bg: 'rgba(6,182,212,0.12)', color: '#06b6d4', dot: '#0891b2', label: 'Invoiced' },
 };
 
 function StatusBadge({ status }) {
@@ -81,14 +82,19 @@ export default function BuyerOrdersPage() {
     return s;
   };
 
-  const filtered = filter === 'all' ? orders : orders.filter(o => getNormalizedStatus(o.status) === filter);
-  
+  const filtered = filter === 'all'
+    ? orders
+    : filter === 'invoiced'
+    ? orders.filter(o => o.status === 'invoiced')
+    : orders.filter(o => getNormalizedStatus(o.status) === filter); 
+
   const tabs = [
     { key: 'all', label: 'All Orders' },
     { key: 'pending', label: 'Pending' },
     { key: 'partially fulfilled', label: 'Partially Fulfilled' },
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'despatched', label: 'Despatched' },
+    { key: 'invoiced', label: 'Invoiced' },
   ];
 
   return (
@@ -190,7 +196,7 @@ export default function BuyerOrdersPage() {
                       <div style={{ fontSize: '13px', fontWeight: '700', color: '#fff', fontFamily: 'monospace' }}>#{order.orderId.split('-').pop()}</div>
                       <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>{new Date(order.createdAt).toLocaleDateString('en-AU')}</div>
                       <div style={{ fontSize: '13px', fontWeight: '800', color: '#fff' }}>${Number(order.totalCost || 0).toFixed(2)}</div>
-                      <div><StatusBadge status={getNormalizedStatus(order.status)} /></div>
+                      <StatusBadge status={order.status === 'invoiced' ? 'invoiced' : getNormalizedStatus(order.mySpecificStatus)} />
                       <button style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', fontSize: '11px', fontWeight: '700', color: '#fff', cursor: 'pointer' }}>View</button>
                     </motion.div>
                   ))}

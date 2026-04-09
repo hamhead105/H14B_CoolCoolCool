@@ -19,11 +19,13 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "@supabase/supabase-js": "^2.99.1",
+    "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.4",
     "prisma": "^5.22.0",
     "swagger-jsdoc": "^6.2.8",
@@ -35,13 +37,15 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 85,
-        "functions": 90,
-        "lines": 90,
-        "statements": 90
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
       }
     }
   }

@@ -21,6 +21,7 @@ function StatusBadge({ status }) {
     confirmed:  { bg: 'rgba(37,99,235,0.12)',  color: '#60a5fa', dot: '#3b82f6', label: 'Confirmed' },
     despatched: { bg: 'rgba(16,185,129,0.12)', color: '#34d399', dot: '#10b981', label: 'Despatched' },
     cancelled:  { bg: 'rgba(239,68,68,0.12)',  color: '#f87171', dot: '#ef4444', label: 'Cancelled' },
+    invoiced: { bg: 'rgba(6,182,212,0.12)', color: '#06b6d4', dot: '#0891b2', label: 'Invoiced' },
   };
   const s = map[status?.toLowerCase()] || map.pending;
   return (
@@ -85,8 +86,10 @@ export default function OrdersPage() {
     return s === 'order placed' ? 'pending' : s;
   };
 
-  const filtered = filter === 'all' 
-    ? orders 
+    const filtered = filter === 'all'
+    ? orders
+    : filter === 'invoiced'
+    ? orders.filter(o => o.status === 'invoiced')
     : orders.filter(o => getNormalizedStatus(o.mySpecificStatus) === filter);
 
   const tabs = [
@@ -94,6 +97,7 @@ export default function OrdersPage() {
     { key: 'pending', label: 'Pending' },
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'despatched', label: 'Despatched' },
+    { key: 'invoiced', label: 'Invoiced' },
   ];
 
   if (loading) return (
@@ -194,7 +198,7 @@ export default function OrdersPage() {
                       <td style={{ padding: '20px 24px', color: '#fff', fontWeight: '800' }}>${Number(order.myTotalCost).toFixed(2)}</td>
                       <td style={{ padding: '20px 24px', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>{new Date(order.createdAt).toLocaleDateString('en-AU')}</td>
                       <td style={{ padding: '20px 24px' }}>
-                        <StatusBadge status={getNormalizedStatus(order.mySpecificStatus)} />
+                        <StatusBadge status={order.status === 'invoiced' ? 'invoiced' : getNormalizedStatus(order.mySpecificStatus)} />
                       </td>
                       <td style={{ padding: '20px 24px', textAlign: 'right' }}>
                         <motion.button 
