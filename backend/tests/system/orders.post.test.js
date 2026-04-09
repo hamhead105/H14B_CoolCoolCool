@@ -74,21 +74,6 @@ describe('POST /orders', () => {
     expect(response.status).toBe(400);
   });
 
-  test('HTTP 403: seller cannot create orders', async () => {
-    const response = await fetch(`${url}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer Seller token'
-      },
-      body: creation_input1
-    });
-
-    expect(response.status).toBe(403);
-    const data = await response.json();
-    expect(data.error).toMatch(/Only buyers/);
-  });
-
   test('HTTP 401: invalid or missing token', async () => {
     const response = await fetch(`${url}/orders`, {
       method: 'POST',

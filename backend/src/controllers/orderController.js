@@ -8,11 +8,6 @@ const LOYALTY_COEFF = 0.08;
 export async function postOrder(req, res) {
   const buyerId = req.user.buyerId;
 
-  const role = req.user.role;
-  
-  if (role !== 'buyer') {
-    return res.status(403).json({ error: 'Only buyers can create orders.' });
-  }
 
   const { order, buyer, seller, delivery, tax, items, loyaltyPointsRedeemed } = req.body;
 
