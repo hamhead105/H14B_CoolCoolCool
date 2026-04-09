@@ -32,7 +32,11 @@ const options = {
     path.join(__dirname, './health.js'),
     path.join(__dirname, './buyers.js'),
     path.join(__dirname, './sellers.js'),
-    path.join(__dirname, './products.js')
+    path.join(__dirname, './products.js'),
+    path.join(__dirname, './email.js'),
+    path.join(__dirname, './invoices.js'),
+    path.join(__dirname, './ratings.js')
+
   ]
 };
 
@@ -53,7 +57,7 @@ router.get('/', (req, res) => {
         <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
         <script>
           SwaggerUIBundle({
-            url: '/api-docs/spec',
+            url: '/api/api-docs/spec',
             dom_id: '#swagger-ui',
             presets: [SwaggerUIBundle.presets.apis],
             deepLinking: true
