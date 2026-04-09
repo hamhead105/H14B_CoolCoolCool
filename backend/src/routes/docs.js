@@ -32,7 +32,11 @@ const options = {
     path.join(__dirname, './health.js'),
     path.join(__dirname, './buyers.js'),
     path.join(__dirname, './sellers.js'),
-    path.join(__dirname, './products.js')
+    path.join(__dirname, './products.js'),
+    path.join(__dirname, './email.js'),
+    path.join(__dirname, './invoices.js'),
+    path.join(__dirname, './ratings.js')
+
   ]
 };
 
