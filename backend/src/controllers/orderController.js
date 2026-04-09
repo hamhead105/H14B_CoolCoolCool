@@ -7,11 +7,6 @@ const LOYALTY_COEFF = 0.08;
 
 export async function postOrder(req, res) {
   const buyerId = req.user.buyerId;
-  const role = req.user.role;
-
-  if (role !== 'buyer') {
-    return res.status(403).json({ error: 'Only buyers can create orders.' });
-  }
 
   const { order, buyer, seller, delivery, tax, items, loyaltyPointsRedeemed } = req.body;
 
@@ -63,20 +58,6 @@ export async function postOrder(req, res) {
     const dueDate = new Date(today);
     dueDate.setDate(today.getDate() + 7);
 
-    let invoice = null;
-
-    try {
-      invoice = await createInvoice({
-        order_reference: String(createdOrder.orderId ?? order.id),
-        customer_id: String(buyer.companyId),
-        issue_date: today.toISOString().slice(0, 10),
-        due_date: dueDate.toISOString().slice(0, 10),
-        currency: order.currencyID || 'AUD',
-      });
-    } catch (invoiceError) {
-      console.error('Failed to create invoice:', invoiceError.message);
-    }
-
     if (isEmailConfigured() && buyer.email && buyer.email !== 'NOT-PROVIDED') {
       try {
         await sendOrderEmail(buyer.email, order.id, xml_output);
@@ -98,7 +79,6 @@ export async function postOrder(req, res) {
       loyaltyPointsEarned,
       loyaltyPointsRedeemed: 0,
       ublDocument: xml_output,
-      invoice,
     });
   } catch (error) {
     console.error(error);
@@ -170,18 +150,18 @@ export async function putOrder(req, res) {
     if (!existing) return res.status(404).json({ error: 'Order not found' });
 
     let updatedItems = items || [...existing.inputData.items];
-    
+
     if (sellerId && status) {
-      updatedItems = updatedItems.map(item => 
-        String(item.sellerId) === String(sellerId) 
-          ? { ...item, itemStatus: status } 
+      updatedItems = updatedItems.map(item =>
+        String(item.sellerId) === String(sellerId)
+          ? { ...item, itemStatus: status }
           : item
       );
     }
 
     let globalStatus = existing.status;
     const allStatuses = updatedItems.map(i => i.itemStatus);
-    
+
     if (allStatuses.every(s => s === 'despatched')) {
       globalStatus = 'despatched';
     } else if (allStatuses.some(s => s === 'despatched' || s === 'confirmed')) {
@@ -195,27 +175,53 @@ export async function putOrder(req, res) {
       seller:   { ...existing.inputData.seller,   ...(seller || {}) },
       delivery: { ...existing.inputData.delivery, ...(delivery || {}) },
       tax:      { ...existing.inputData.tax,      ...(tax || {}) },
-      items:    updatedItems
+      items:    updatedItems,
     };
 
     const xml_output = create_xml(mergedInput);
     const taxAmount = Number(getTaxAmount(mergedInput).toFixed(2));
     const payableAmount = Number(getPayableAmount(mergedInput).toFixed(2));
 
-    await updateOrder(orderId, {
+    // Base update — always applied
+    const orderUpdate = {
       status: globalStatus,
       inputData: mergedInput,
       totalCost: payableAmount,
       taxAmount,
       payableAmount,
       anticipatedMonetaryTotal: getLineExtension(mergedInput),
-    });
+    };
+
+    // Auto-generate invoice when all items hit despatched for the first time
+    let invoice = null;
+    if (globalStatus === 'despatched' && !existing.externalInvoiceId) {
+      try {
+        const today = new Date();
+        const dueDate = new Date(today);
+        dueDate.setDate(today.getDate() + 7);
+
+        invoice = await createInvoice({
+          orderId: orderId,
+          inputData: mergedInput,
+        });
+
+        orderUpdate.externalInvoiceId = invoice.invoice.invoice_id;
+        orderUpdate.invoiceStatus = invoice.invoice.status;
+        orderUpdate.invoiceMetadata = invoice.invoice;
+      } catch (invoiceError) {
+        console.error('Failed to auto-generate invoice:', invoiceError.message);
+        orderUpdate.invoiceError = invoiceError.message;
+      }
+    }
+
+    await updateOrder(orderId, orderUpdate);
 
     return res.status(200).json({
       orderId,
       status: globalStatus,
       totalCost: payableAmount,
-      inputData: { ...mergedInput, ublDocument: xml_output }
+      inputData: { ...mergedInput, ublDocument: xml_output },
+      ...(invoice && { invoice: invoice.invoice }),
     });
   } catch (error) {
     console.error(error);

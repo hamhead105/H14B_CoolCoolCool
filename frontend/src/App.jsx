@@ -16,6 +16,8 @@ import BuyerOrdersPage from './pages/BuyerOrdersPage';
 import OrderDetailsPage from './pages/OrderDetailsPage';
 import OrdersPage from './pages/OrdersPage';
 import SettingsPage from './pages/SettingsPage';
+import InvoicePage from './pages/InvoicePage';
+
 
 // ── Auth helpers ─────────────────────────────────────────────
 export function getToken() { return localStorage.getItem('token'); }
@@ -45,6 +47,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/orders/:orderId/invoice" element={<InvoicePage />} />
 
         {/* Buyer */}
         <Route path="/buyer/dashboard" element={

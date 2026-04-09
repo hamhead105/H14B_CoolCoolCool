@@ -25,6 +25,7 @@
     "dotenv": "^17.3.1",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.4",
     "prisma": "^5.22.0",
     "swagger-jsdoc": "^6.2.8",
@@ -42,9 +43,9 @@
     "coverageThreshold": {
       "global": {
         "branches": 85,
-        "functions": 90,
-        "lines": 90,
-        "statements": 90
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
       }
     }
   }

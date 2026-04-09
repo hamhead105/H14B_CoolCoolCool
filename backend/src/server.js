@@ -12,6 +12,8 @@ import buyerRoutes from './routes/buyers.js';
 import sellerRoutes from './routes/sellers.js';;;
 import emailRoutes from './routes/email.js';
 import ratingRoutes from './routes/ratings.js';
+import invoiceRoutes from './routes/invoices.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,9 +32,8 @@ app.use('/api/health', healthRoutes);
 app.use('/api/api-docs', docsRoutes);
 app.use('/api/buyers', buyerRoutes);
 app.use('/api/sellers', sellerRoutes);
-
-// Added line below
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+app.use('/api/orders', invoiceRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
