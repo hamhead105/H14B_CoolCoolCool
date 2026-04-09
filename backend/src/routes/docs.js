@@ -53,7 +53,7 @@ router.get('/', (req, res) => {
         <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
         <script>
           SwaggerUIBundle({
-            url: '/api-docs/spec',
+            url: '/api/api-docs/spec',
             dom_id: '#swagger-ui',
             presets: [SwaggerUIBundle.presets.apis],
             deepLinking: true
