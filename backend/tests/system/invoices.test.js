@@ -128,7 +128,7 @@ describe('POST /orders/:id/invoice', () => {
     mPrisma.order.findUnique.mockResolvedValue(mockOrder);
     mPrisma.order.update.mockResolvedValue({
       ...mockOrder,
-      status: 'despatched',
+      status: 'invoiced',
       externalInvoiceId: 'INV-TEST-001',
       invoiceStatus: 'draft',
       invoiceMetadata: { invoice_id: 'INV-TEST-001' },
@@ -151,7 +151,7 @@ describe('POST /orders/:id/invoice', () => {
       expect.objectContaining({
         where: { orderId: 'ORD-2025-001' },
         data: expect.objectContaining({
-          status: 'despatched',
+          status: 'invoiced',
           externalInvoiceId: 'INV-TEST-001',
           invoiceStatus: 'draft',
         }),

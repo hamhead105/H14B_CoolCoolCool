@@ -125,7 +125,9 @@ describe('createInvoice', () => {
     expect(body.currency).toBe('AUD');
     expect(body.supplier.name).toBe('Supplier');
     expect(body.customer.name).toBe('Buyer');
-    expect(body.items).toEqual([]);
+    expect(body.items).toEqual([
+        { name: 'Order Item', description: '', quantity: 1, unit_price: 0, unit_code: 'EA' }
+    ]);
   });
 
   test('uses Item N fallback when product name is missing', async () => {
