@@ -55,7 +55,7 @@ export default function OrderDetailsPage() {
         .then(data => setRating(data))
         .catch(() => setRating(null));
     }
-  }, [orderId, order?.orderId]);
+  }, [orderId, order?.orderId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleForwardXML = async () => {
     if (!forwardEmail || !forwardEmail.includes('@')) {
