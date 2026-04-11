@@ -127,7 +127,7 @@ export default function CartPage() {
           priceAmount: item.onSpecial ? Number(item.cost * (1 - item.discount)) : Number(item.cost),
           product: { name: item.name, description: item.description || "", sellersItemId: item.productId || item.id },
           sellerId: String(item.sellerId) 
-        }))
+        })),
       };
   
       const res = await fetch(`${API_BASE}/orders`, {
