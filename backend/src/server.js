@@ -1,4 +1,3 @@
-// import 'dotenv/config';
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
@@ -9,11 +8,13 @@ import productRoutes from './routes/products.js';
 import healthRoutes from './routes/health.js';
 import docsRoutes from './routes/docs.js';
 import buyerRoutes from './routes/buyers.js';
-import sellerRoutes from './routes/sellers.js';;;
+import sellerRoutes from './routes/sellers.js';
 import emailRoutes from './routes/email.js';
 import ratingRoutes from './routes/ratings.js';
 import invoiceRoutes from './routes/invoices.js';
+import despatchAdviceRoutes from './routes/despatchAdvices.js';
 
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +35,8 @@ app.use('/api/buyers', buyerRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/orders', invoiceRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/orders', despatchAdviceRoutes);
+app.use('/api/despatch-advices', despatchAdviceRoutes);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -42,12 +45,10 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Only start the server if this file is run directly (not imported as a module)
 if (import.meta.url === `file://${process.argv[1]}`) {
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
   });
 }
-
 
 export default app;
