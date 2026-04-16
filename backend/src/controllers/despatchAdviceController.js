@@ -2,7 +2,7 @@ import {
   createDespatchAdvice,
   getDespatchAdvice,
 } from '../services/despatchAdviceService.js';
-import { getOrderById, updateOrder } from '../services/orderServices.js';
+import { getOrderById, updateOrder } from '../services/orderService.js';
 
 export async function postDespatchAdvice(req, res) {
   const { id } = req.params;
