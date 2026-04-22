@@ -7,7 +7,7 @@ import { API_BASE } from '../apiConfig.js';
 
 const SPLINE_URL = 'https://prod.spline.design/p5AxFXq0h-FCdBdX/scene.splinecode';
 
-// ── Tier config ───────────────────────────────────────────────
+// ── Tier Config ───────────────────────────────────────────────
 const TIERS = {
   Bronze: { color: '#cd7c54', glow: 'rgba(205,124,84,0.25)', next: 200 },
   Silver: { color: '#94a3b8', glow: 'rgba(148,163,184,0.25)', next: 500 },
