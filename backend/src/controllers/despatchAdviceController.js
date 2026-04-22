@@ -1,6 +1,7 @@
 import {
   createDespatchAdvice,
   getDespatchAdvice,
+  getDespatchAdviceXML,
 } from '../services/despatchAdviceService.js';
 import { getOrderById, updateOrder } from '../services/orderService.js';
 
@@ -33,6 +34,17 @@ export async function fetchDespatchAdvice(req, res) {
   try {
     const despatchAdvice = await getDespatchAdvice(despatchAdviceId);
     return res.status(200).json(despatchAdvice);
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
+export async function fetchDespatchAdviceXML(req, res) {
+  const { despatchAdviceId } = req.params;
+  try {
+    const xml = await getDespatchAdviceXML(despatchAdviceId);
+    res.setHeader('Content-Type', 'application/xml');
+    return res.status(200).send(xml);
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

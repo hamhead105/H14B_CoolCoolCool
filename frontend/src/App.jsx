@@ -17,6 +17,8 @@ import OrderDetailsPage from './pages/OrderDetailsPage';
 import OrdersPage from './pages/OrdersPage';
 import SettingsPage from './pages/SettingsPage';
 import InvoicePage from './pages/InvoicePage';
+import DespatchAdvicePage from './pages/DespatchAdvicePage';
+
 
 
 // ── Auth helpers ─────────────────────────────────────────────
@@ -48,6 +50,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/orders/:orderId/invoice" element={<InvoicePage />} />
+        <Route path="/orders/:orderId/despatch-advice" element={<DespatchAdvicePage />} />
 
         {/* Buyer */}
         <Route path="/buyer/dashboard" element={

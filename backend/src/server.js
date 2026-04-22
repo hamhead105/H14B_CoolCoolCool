@@ -12,7 +12,7 @@ import sellerRoutes from './routes/sellers.js';
 import emailRoutes from './routes/email.js';
 import ratingRoutes from './routes/ratings.js';
 import invoiceRoutes from './routes/invoices.js';
-import despatchAdviceRoutes from './routes/despatchAdvices.js';
+import { orderDespatchRouter, despatchAdviceRouter } from './routes/despatchAdvices.js';
 
 dotenv.config();
 
@@ -35,8 +35,8 @@ app.use('/api/buyers', buyerRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/orders', invoiceRoutes);
 app.use('/api/invoices', invoiceRoutes);
-app.use('/api/orders', despatchAdviceRoutes);
-app.use('/api/despatch-advices', despatchAdviceRoutes);
+app.use('/api/orders', orderDespatchRouter);
+app.use('/api/despatch-advices', despatchAdviceRouter);
 
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {

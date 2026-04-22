@@ -99,8 +99,17 @@ export default function OrderDetailsPage() {
         setOrder(prev => ({
           ...prev,
           status: updatedOrder.status,
-          inputData: updatedOrder.inputData
+          inputData: updatedOrder.inputData,
+          // Pick up despatch advice and invoice IDs created during this PUT
+          externalDespatchAdviceId: updatedOrder.externalDespatchAdviceId || prev.externalDespatchAdviceId,
+          despatchAdviceMetadata: updatedOrder.despatchAdvice || prev.despatchAdviceMetadata,
+          externalInvoiceId: updatedOrder.externalInvoiceId || prev.externalInvoiceId,
+          invoiceStatus: updatedOrder.invoice?.status || prev.invoiceStatus,
+          invoiceMetadata: updatedOrder.invoice || prev.invoiceMetadata,
         }));
+        if (newStatus === 'despatched') {
+          toast('Items marked as despatched — despatch advice created!');
+        }
       } else {
         alert('Failed to update status. Please try again.');
       }
@@ -175,6 +184,9 @@ export default function OrderDetailsPage() {
   const mySubtotal = myItems.reduce((sum, i) => sum + (Number(i.priceAmount) * Number(i.quantity)), 0);
   const myItemStatus = myItems.length > 0 ? (myItems[0].itemStatus?.toLowerCase() || 'pending') : 'pending';
 
+  const hasDespatchAdvice = !!order.externalDespatchAdviceId;
+  const hasInvoice = !!order.externalInvoiceId;
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#050d1a', fontFamily: "'Geist', sans-serif", overflow: 'hidden' }}>
       <Sidebar />
@@ -208,9 +220,12 @@ export default function OrderDetailsPage() {
             >
               <div>
                 <h3 style={{ fontSize: '12px', color: '#60a5fa', marginBottom: '4px', letterSpacing: '1px', fontWeight: '800' }}>FULFILLMENT ACTIONS</h3>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Current status of your items: <strong style={{ color: '#fff' }}>{myItemStatus.toUpperCase()}</strong></div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+                  Current status of your items: <strong style={{ color: '#fff' }}>{myItemStatus.toUpperCase()}</strong>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+
                 {myItemStatus === 'pending' && (
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     onClick={() => handleStatusChange('confirmed')} disabled={updatingStatus}
@@ -219,6 +234,7 @@ export default function OrderDetailsPage() {
                     {updatingStatus ? 'Syncing...' : 'Confirm Items'}
                   </motion.button>
                 )}
+
                 {myItemStatus === 'confirmed' && (
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     onClick={() => handleStatusChange('despatched')} disabled={updatingStatus}
@@ -227,13 +243,30 @@ export default function OrderDetailsPage() {
                     {updatingStatus ? 'Syncing...' : 'Mark as Despatched'}
                   </motion.button>
                 )}
+
                 {myItemStatus === 'despatched' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span style={{ color: '#4ade80', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
                       Items Despatched
                     </span>
-                    {order.externalInvoiceId ? (
+
+                    {/* Despatch Advice button — always shown once despatched */}
+                    {hasDespatchAdvice ? (
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(`/orders/${orderId}/despatch-advice`)}
+                        style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #059669, #10b981)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                      >
+                        View Despatch Advice →
+                      </motion.button>
+                    ) : (
+                      <div style={{ padding: '10px 16px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', color: 'rgba(52,211,153,0.6)', fontSize: '12px', fontWeight: '600' }}>
+                        Despatch advice pending...
+                      </div>
+                    )}
+
+                    {/* Invoice button */}
+                    {hasInvoice ? (
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                         onClick={() => navigate(`/orders/${orderId}/invoice`)}
                         style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #0891b2, #06b6d4)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
@@ -254,8 +287,29 @@ export default function OrderDetailsPage() {
             </motion.div>
           )}
 
+          {/* ── BUYER DESPATCH ADVICE BANNER ── */}
+          {!isSeller && hasDespatchAdvice && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '16px', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <div>
+                <h3 style={{ fontSize: '12px', color: '#10b981', marginBottom: '4px', letterSpacing: '1px', fontWeight: '800' }}>DESPATCH ADVICE AVAILABLE</h3>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
+                  Despatch ID: <span style={{ color: '#fff', fontFamily: 'monospace' }}>{order.externalDespatchAdviceId}</span>
+                </div>
+              </div>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(`/orders/${orderId}/despatch-advice`)}
+                style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #059669, #10b981)', border: 'none', borderRadius: '10px', color: '#fff', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+              >
+                View Despatch Advice →
+              </motion.button>
+            </motion.div>
+          )}
+
           {/* ── BUYER INVOICE BANNER ── */}
-          {!isSeller && order.externalInvoiceId && (
+          {!isSeller && hasInvoice && (
             <motion.div
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
               style={{ background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.2)', borderRadius: '16px', padding: '24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}

@@ -2,12 +2,12 @@ import { create_xml, getLineExtension, getTaxAmount, getPayableAmount } from '..
 import { createOrder, getOrderById, updateOrder, deleteOrderById, getAllOrders } from '../services/orderService.js';
 import { sendOrderEmail, isEmailConfigured } from '../services/emailService.js';
 import { createInvoice } from '../services/invoiceService.js';
+import { createDespatchAdvice } from '../services/despatchAdviceService.js';
 
 const LOYALTY_COEFF = 0.08;
 
 export async function postOrder(req, res) {
   const buyerId = req.user.buyerId;
-
 
   const { order, buyer, seller, delivery, tax, items, loyaltyPointsRedeemed } = req.body;
 
@@ -92,7 +92,7 @@ export async function getOrder(req, res) {
 
   try {
     const found = await getOrderById(orderId);
-    
+
     if (!found) {
       return res.status(404).json({ error: 'Order not found' });
     }
@@ -113,7 +113,7 @@ export async function getOrder(req, res) {
 }
 
 export async function deleteOrder(req, res) {
-    const orderId = req.params.id;
+  const orderId = req.params.id;
 
   try {
     const found = await getOrderById(orderId);
@@ -171,11 +171,11 @@ export async function putOrder(req, res) {
 
     const mergedInput = {
       ...existing.inputData,
-      order:    { ...existing.inputData.order,    ...(order || {}) },
-      buyer:    { ...existing.inputData.buyer,    ...(buyer || {}) },
-      seller:   { ...existing.inputData.seller,   ...(seller || {}) },
+      order:    { ...existing.inputData.order,    ...(order    || {}) },
+      buyer:    { ...existing.inputData.buyer,    ...(buyer    || {}) },
+      seller:   { ...existing.inputData.seller,   ...(seller   || {}) },
       delivery: { ...existing.inputData.delivery, ...(delivery || {}) },
-      tax:      { ...existing.inputData.tax,      ...(tax || {}) },
+      tax:      { ...existing.inputData.tax,      ...(tax      || {}) },
       items:    updatedItems,
     };
 
@@ -183,7 +183,6 @@ export async function putOrder(req, res) {
     const taxAmount = Number(getTaxAmount(mergedInput).toFixed(2));
     const payableAmount = Number(getPayableAmount(mergedInput).toFixed(2));
 
-    // Base update — always applied
     const orderUpdate = {
       status: globalStatus,
       inputData: mergedInput,
@@ -193,16 +192,33 @@ export async function putOrder(req, res) {
       anticipatedMonetaryTotal: getLineExtension(mergedInput),
     };
 
-    // Auto-generate invoice when all items hit despatched for the first time
+    // Auto-create despatch advice when any items hit despatched for the first time
+    let despatchAdvice = null;
+    if (
+      (globalStatus === 'despatched' || globalStatus === 'partially fulfilled') &&
+      status === 'despatched' &&
+      !existing.externalDespatchAdviceId
+    ) {
+      try {
+        despatchAdvice = await createDespatchAdvice({
+          orderId,
+          inputData: mergedInput,
+        });
+
+        orderUpdate.externalDespatchAdviceId = despatchAdvice.despatchAdviceId;
+        orderUpdate.despatchAdviceMetadata = despatchAdvice;
+      } catch (despatchError) {
+        console.error('Failed to auto-generate despatch advice:', despatchError.message);
+        orderUpdate.despatchAdviceError = despatchError.message;
+      }
+    }
+
+    // Auto-generate invoice when ALL items are despatched for the first time
     let invoice = null;
     if (globalStatus === 'despatched' && !existing.externalInvoiceId) {
       try {
-        const today = new Date();
-        const dueDate = new Date(today);
-        dueDate.setDate(today.getDate() + 7);
-
         invoice = await createInvoice({
-          orderId: orderId,
+          orderId,
           inputData: mergedInput,
         });
 
@@ -222,7 +238,10 @@ export async function putOrder(req, res) {
       status: globalStatus,
       totalCost: payableAmount,
       inputData: { ...mergedInput, ublDocument: xml_output },
+      ...(despatchAdvice && { despatchAdvice }),
       ...(invoice && { invoice: invoice.invoice }),
+      externalDespatchAdviceId: orderUpdate.externalDespatchAdviceId || existing.externalDespatchAdviceId || null,
+      externalInvoiceId: orderUpdate.externalInvoiceId || existing.externalInvoiceId || null,
     });
   } catch (error) {
     console.error(error);

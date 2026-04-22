@@ -2,11 +2,13 @@ import express from 'express';
 import {
   postDespatchAdvice,
   fetchDespatchAdvice,
+  fetchDespatchAdviceXML,
 } from '../controllers/despatchAdviceController.js';
+import { authMiddleware } from '../middleware/auth.js';
 
-const router = express.Router();
+export const orderDespatchRouter = express.Router();
+orderDespatchRouter.post('/:id/despatch-advice', authMiddleware, postDespatchAdvice);
 
-router.post('/:id/despatch-advice', postDespatchAdvice);
-router.get('/:despatchAdviceId', fetchDespatchAdvice);
-
-export default router;
+export const despatchAdviceRouter = express.Router();
+despatchAdviceRouter.get('/:despatchAdviceId', fetchDespatchAdvice);
+despatchAdviceRouter.get('/:despatchAdviceId/xml', fetchDespatchAdviceXML);

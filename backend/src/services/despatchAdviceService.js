@@ -137,7 +137,21 @@ export async function getDespatchAdvice(despatchAdviceId) {
     throw new Error(err.message || `Despatch Advice API error: ${res.status}`);
   }
 
-  throw new Error(err.message || 'Invoice Generation');
-
   return res.json();
+}
+
+
+export async function getDespatchAdviceXML(despatchAdviceId) {
+  const res = await fetch(`${DESPATCH_BASE_URL}/despatch-advices/${despatchAdviceId}/ubl`, {
+    headers: {
+      'Accept': 'application/xml',
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Despatch Advice XML error: ${res.status}`);
+  }
+
+  return res.text();
 }
