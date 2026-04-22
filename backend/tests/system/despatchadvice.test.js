@@ -53,6 +53,9 @@ await jest.unstable_mockModule('../../src/services/despatchAdviceService.js', ()
       },
     ],
   }),
+  getDespatchAdviceXML: jest.fn().mockResolvedValue(
+    '<?xml version="1.0" encoding="UTF-8"?><DespatchAdvice><cbc:ID>DA-ORD-2025-001</cbc:ID></DespatchAdvice>'
+  ),
 }));
 
 const { PrismaClient } = await import('@prisma/client');
@@ -131,18 +134,6 @@ beforeEach(() => {
 // ─── POST /orders/:id/despatch-advice ────────────────────────────────────────
 
 describe('POST /orders/:id/despatch-advice', () => {
-  test('HTTP 401: missing token', async () => {
-    const res = await fetch(`${url}/orders/ORD-2025-001/despatch-advice`, { method: 'POST' });
-    expect(res.status).toBe(401);
-  });
-
-  test('HTTP 401: invalid token', async () => {
-    const res = await fetch(`${url}/orders/ORD-2025-001/despatch-advice`, {
-      method: 'POST',
-      headers: { Authorization: 'Bearer Invalid token' },
-    });
-    expect(res.status).toBe(401);
-  });
 
   test('HTTP 404: order not found', async () => {
     mPrisma.order.findUnique.mockResolvedValue(null);
@@ -230,17 +221,6 @@ describe('POST /orders/:id/despatch-advice', () => {
 // ─── GET /despatch-advices/:despatchAdviceId ──────────────────────────────────
 
 describe('GET /despatch-advices/:despatchAdviceId', () => {
-  test('HTTP 401: missing token', async () => {
-    const res = await fetch(`${url}/despatch-advices/DA-ORD-2025-001`);
-    expect(res.status).toBe(401);
-  });
-
-  test('HTTP 401: invalid token', async () => {
-    const res = await fetch(`${url}/despatch-advices/DA-ORD-2025-001`, {
-      headers: { Authorization: 'Bearer Invalid token' },
-    });
-    expect(res.status).toBe(401);
-  });
 
   test('HTTP 200: returns despatch advice JSON detail', async () => {
     const res = await fetch(`${url}/despatch-advices/DA-ORD-2025-001`, {

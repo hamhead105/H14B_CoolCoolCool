@@ -45,14 +45,35 @@ await jest.unstable_mockModule('../../src/services/invoiceService.js', () => ({
   getInvoiceXML: jest.fn().mockResolvedValue(''),
 }));
 
-// Mock despatch advice service
+export const mockCreateDespatchAdvice = jest.fn().mockResolvedValue({
+  despatchAdviceId: 'DA-ORD-2025-001',
+  status: 'Active',
+  orderReference: 'ORD-2025-001',
+  issueDate: '2025-04-01',
+  despatchAdviceTypeCode: 'delivery',
+  despatchLines: [
+    {
+      id: 'LINE-1',
+      deliveredQuantity: 2,
+      deliveredQuantityUnitCode: 'EA',
+      item: { name: 'Vacuum Cleaner' },
+    },
+  ],
+});
+
 await jest.unstable_mockModule('../../src/services/despatchAdviceService.js', () => ({
-  createDespatchAdvice: jest.fn().mockResolvedValue({
+  createDespatchAdvice: mockCreateDespatchAdvice,
+  getDespatchAdvice: jest.fn().mockResolvedValue({
     despatchAdviceId: 'DA-ORD-2025-001',
     status: 'Active',
     orderReference: 'ORD-2025-001',
+    despatchLines: [
+      { id: 'LINE-1', deliveredQuantity: 2, item: { name: 'Vacuum Cleaner' } },
+    ],
   }),
-  getDespatchAdvice: jest.fn(),
+  getDespatchAdviceXML: jest.fn().mockResolvedValue(
+    '<?xml version="1.0" encoding="UTF-8"?><DespatchAdvice><cbc:ID>DA-ORD-2025-001</cbc:ID></DespatchAdvice>'
+  ),
 }));
 
 const { PrismaClient } = await import('@prisma/client');
@@ -282,7 +303,7 @@ describe('PUT /orders/:id', () => {
 
   test('HTTP 200: despatch advice failure is non-fatal — order still updates', async () => {
     const { createDespatchAdvice } = await import('../../src/services/despatchAdviceService.js');
-    createDespatchAdvice.mockRejectedValueOnce(new Error('Despatch API down'));  // ← move this BEFORE the fetch
+    createDespatchAdvice.mockRejectedValueOnce(new Error('Despatch API down'));
 
     const existingOrder = {
       orderId: 'ORD-2025-001',
@@ -294,8 +315,6 @@ describe('PUT /orders/:id', () => {
 
     mPrisma.order.findUnique.mockResolvedValue(existingOrder);
     mPrisma.order.update.mockResolvedValue({ ...existingOrder, status: 'despatched' });
-
-    // ← REMOVE the import and mockRejectedValueOnce that was here after fetch setup
 
     const response = await fetch(`${url}/orders/ORD-2025-001`, {
       method: 'PUT',
