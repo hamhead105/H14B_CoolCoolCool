@@ -49,24 +49,27 @@ model Seller {
 }
 
 model Order {
-  orderId                  String   @id
-  buyerId                  Int?
-  buyer                    Buyer?   @relation(fields: [buyerId], references: [buyerId])
-  status                   String
-  inputData                Json
-  totalCost                Float
-  taxAmount                Float
-  payableAmount            Float
-  anticipatedMonetaryTotal Float
-  loyaltyPointsEarned      Int      @default(0)
-  loyaltyPointsRedeemed    Int      @default(0)
-  ratingScore              Int?
-  ratingComment            String?
-  externalInvoiceId        String?
-  invoiceStatus            String?
-  invoiceMetadata          Json?
-  invoiceError             String?
-  createdAt                DateTime @default(now())
+  orderId                   String   @id
+  buyerId                   Int?
+  buyer                     Buyer?   @relation(fields: [buyerId], references: [buyerId])
+  status                    String
+  inputData                 Json
+  totalCost                 Float
+  taxAmount                 Float
+  payableAmount             Float
+  anticipatedMonetaryTotal  Float
+  loyaltyPointsEarned       Int      @default(0)
+  loyaltyPointsRedeemed     Int      @default(0)
+  ratingScore               Int?
+  ratingComment             String?
+  externalInvoiceId         String?
+  invoiceStatus             String?
+  invoiceMetadata           Json?
+  invoiceError              String?
+  externalDespatchAdviceId  String?
+  despatchAdviceMetadata    Json?
+  despatchAdviceError       String?
+  createdAt                 DateTime @default(now())
 }
 
 model Product {

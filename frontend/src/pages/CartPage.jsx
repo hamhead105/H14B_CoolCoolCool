@@ -9,6 +9,7 @@ function getCart() {
 }
 function saveCart(cart) { localStorage.setItem('cart', JSON.stringify(cart)); }
 
+// create cart page
 export default function CartPage() {
   const navigate = useNavigate();
   const [cart, setCartState] = useState(getCart());
