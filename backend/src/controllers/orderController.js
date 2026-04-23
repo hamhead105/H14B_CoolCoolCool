@@ -140,7 +140,7 @@ export async function deleteOrder(req, res) {
 
 export async function putOrder(req, res) {
   const orderId = req.params.id;
-  const { status, sellerId, order, buyer, seller, delivery, tax, items } = req.body;
+  const { status, sellerId, order, buyer, seller, delivery, tax, items, generateInvoice } = req.body;
 
   if (!req.body || Object.keys(req.body).length === 0) {
     return res.status(422).json({ error: 'No valid fields provided.' });
@@ -213,9 +213,8 @@ export async function putOrder(req, res) {
       }
     }
 
-    // Auto-generate invoice when ALL items are despatched for the first time
     let invoice = null;
-    if (globalStatus === 'despatched' && !existing.externalInvoiceId) {
+    if (generateInvoice === true && globalStatus === 'despatched' && !existing.externalInvoiceId) {
       try {
         invoice = await createInvoice({
           orderId,
