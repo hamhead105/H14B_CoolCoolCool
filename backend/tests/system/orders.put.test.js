@@ -262,45 +262,6 @@ describe('PUT /orders/:id', () => {
     );
   });
 
-  test('HTTP 200: all items despatched — despatch advice AND invoice both auto-created', async () => {
-    const existingOrder = {
-      orderId: 'ORD-2025-001',
-      status: 'confirmed',
-      externalInvoiceId: null,
-      externalDespatchAdviceId: null,
-      inputData: allDespatchedInput, // all items are seller "1", all confirmed
-    };
-
-    mPrisma.order.findUnique.mockResolvedValue(existingOrder);
-    mPrisma.order.update.mockResolvedValue({ ...existingOrder, status: 'despatched' });
-
-    const response = await fetch(`${url}/orders/ORD-2025-001`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer Seller token' },
-      body: JSON.stringify({ status: 'despatched', sellerId: '1' })
-    });
-
-    expect(response.status).toBe(200);
-    const data = await response.json();
-
-    expect(data.status).toBe('despatched');
-
-    // Both despatch advice and invoice should be present in response
-    expect(data.externalDespatchAdviceId).toBe('DA-ORD-2025-001');
-    expect(data.externalInvoiceId).toBe('INV-TEST-001');
-
-    // DB updated with both
-    expect(mPrisma.order.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          externalDespatchAdviceId: 'DA-ORD-2025-001',
-          externalInvoiceId: 'INV-TEST-001',
-          invoiceStatus: 'draft',
-        }),
-      })
-    );
-  });
-
   test('HTTP 200: despatch advice failure is non-fatal — order still updates', async () => {
     const { createDespatchAdvice } = await import('../../src/services/despatchAdviceService.js');
     createDespatchAdvice.mockRejectedValueOnce(new Error('Despatch API down'));

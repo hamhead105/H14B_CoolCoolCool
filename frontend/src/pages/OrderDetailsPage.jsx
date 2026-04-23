@@ -100,12 +100,8 @@ export default function OrderDetailsPage() {
           ...prev,
           status: updatedOrder.status,
           inputData: updatedOrder.inputData,
-          // Pick up despatch advice and invoice IDs created during this PUT
           externalDespatchAdviceId: updatedOrder.externalDespatchAdviceId || prev.externalDespatchAdviceId,
           despatchAdviceMetadata: updatedOrder.despatchAdvice || prev.despatchAdviceMetadata,
-          externalInvoiceId: updatedOrder.externalInvoiceId || prev.externalInvoiceId,
-          invoiceStatus: updatedOrder.invoice?.status || prev.invoiceStatus,
-          invoiceMetadata: updatedOrder.invoice || prev.invoiceMetadata,
         }));
         if (newStatus === 'despatched') {
           toast('Items marked as despatched — despatch advice created!');
